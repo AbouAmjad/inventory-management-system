@@ -68,6 +68,17 @@ function editItem(index) {
         displayInventory(); // Refresh the list
     }
 }
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvvRa3ZCxpyzamImbApeH-1DyH9EZTCc2WoGlCkfGNo-hLDH_QORA1_LsMR6x_SHos/exec";
+
+// Example POST request to add item
+fetch(GOOGLE_SCRIPT_URL, {
+  method: "POST",
+  body: new URLSearchParams({
+    name: "Hammer",
+    quantity: 10,
+    price: 5.99
+  }),
+});
 
 // Initially display inventory
 displayInventory();
