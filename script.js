@@ -5,71 +5,80 @@ const SUPABASE_URL = 'https://vjhikffducpurixlkfjd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y';
 
 let supabase;
-let userId = null; // Will be set after successful login
-window.allItems = []; // Global array for autocomplete items
-let currentInventoryData = []; // Store the full inventory data for client-side filtering
+let userId = null; // Stores the UUID of the logged-in user
+let userEmail = null; // Stores the email of the logged-in user for display
+
+window.allItems = []; // Global array for item autocompletion (contains {id, name})
+let currentInventoryData = []; // Stores the full inventory items data for client-side filtering
+let currentTransactionData = []; // Stores the full transaction history data for client-side filtering
 
 // --- Authentication & Initialization ---
 
 /**
  * Initializes the Supabase client and sets up the authentication state listener.
+ * This function runs once on page load to determine if a user is already logged in.
  */
 async function initializeSupabase() {
-    // Check if the Supabase client is available (from the CDN script loaded in index.html)
+    // Basic check if Supabase SDK is loaded (it's loaded via CDN in index.html)
     if (typeof window.supabase === 'undefined') {
-        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Supabase SDK not loaded. Check index.html for CDN.';
         console.error('Supabase SDK not found. Make sure the Supabase CDN script is loaded before script.js.');
+        document.getElementById('loggedInUserEmail').textContent = 'Error: Supabase SDK not loaded!';
+        document.getElementById('loggedInUserEmailDesktop').textContent = 'Error: Supabase SDK not loaded!';
         return;
     }
 
-    // Basic check for placeholder values in case they were not replaced
+    // Basic check for placeholder Supabase credentials
     if (SUPABASE_URL.includes('YOUR_SUPABASE_URL') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY')) {
-        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Please set Supabase URL/Key in script.js!';
+        console.error('Supabase URL or Anon Key not set in script.js!');
+        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Set Supabase URL/Key!';
+        document.getElementById('loggedInUserEmailDesktop').textContent = 'ERROR: Set Supabase URL/Key!';
         return;
     }
 
-    // Create Supabase client instance
+    // Create the Supabase client instance
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Set up a listener for authentication state changes. This is the primary way
-    // the app reacts to a user logging in or out.
+    // Set up a listener for authentication state changes. This is the core logic
+    // that determines whether to show the login screen or the main app.
     supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth event:', event, 'Session:', session);
-        if (session) {
+        if (session && session.user) {
             // User is logged in
             userId = session.user.id;
-            document.getElementById('loggedInUserEmail').textContent = `Logged in as: ${session.user.email}`;
-            showAppScreen(); // Show the main application interface
-            setupRealtimeInventoryListener(); // Set up real-time data listener for this user
+            userEmail = session.user.email; // Get the user's email for display
+            document.getElementById('loggedInUserEmail').textContent = `Logged in as: ${userEmail}`;
+            document.getElementById('loggedInUserEmailDesktop').textContent = `Logged in as: ${userEmail}`;
+            showAppScreen(); // Transition to the main application interface
+            setupRealtimeListeners(); // Set up all real-time data listeners for the logged-in user
         } else {
-            // User is logged out or no session
+            // User is logged out or no active session
             userId = null;
-            showAuthScreen(); // Show the authentication screen
-            // Clear all data and UI related to the previous user
+            userEmail = null;
+            showAuthScreen(); // Transition to the authentication screen
+            // Clear all data and UI related to the previous user/session
             currentInventoryData = [];
             window.allItems = [];
-            renderInventoryTable([]); // Clear the inventory table
+            renderInventoryTable([]); // Clear inventory table display
+            currentTransactionData = [];
+            renderTransactionTable([]); // Clear transaction table display
             supabase.removeAllChannels(); // Disconnect any active real-time subscriptions
         }
     });
 
-    // On initial page load, check if there's an active session.
+    // Check for an initial active session on page load.
+    // The `onAuthStateChange` listener above usually handles this, but this
+    // explicit check can ensure immediate UI correctness.
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
         console.error("Error getting initial session:", error.message);
-        showAuthScreen(); // If there's an error getting session, show auth screen
+        showAuthScreen(); // Default to auth screen if there's an error fetching session
     } else if (session) {
-        // If a session exists, onAuthStateChange will be triggered.
-        console.log("Initial session found. onAuthStateChange will handle.");
+        console.log("Initial session found. onAuthStateChange will handle transition.");
+        // The onAuthStateChange callback will be triggered immediately with this session.
     } else {
-        // No active session, so explicitly show the authentication screen.
         console.log("No active session found. Showing authentication screen.");
-        showAuthScreen();
+        showAuthScreen(); // No session, so show the login screen
     }
-
-    // Always ensure the Sign In tab is active initially on the auth screen.
-    // Since Sign Up is removed, this ensures the login form is shown first.
-    document.querySelector('#authScreen .tab-button').click();
 }
 
 /**
@@ -82,60 +91,74 @@ function showAuthScreen() {
 
 /**
  * Shows the main application screen and hides the authentication screen.
- * Also defaults to the 'Add New Item' tab.
+ * Also defaults to the 'Add New Item' tab upon showing.
  */
 function showAppScreen() {
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     // Default to the first app tab ('Add New Item') when the app screen is shown
-    document.querySelector('#appScreen .tab-button').click();
+    document.querySelector('.sidebar-button.active') || document.querySelector('.sidebar-button').click();
 }
 
-// --- Supabase Data Interactions ---
-
 /**
- * Sets up a real-time listener for the 'products' table.
- * This listener automatically updates the inventory display when data changes
- * for the currently logged-in user.
+ * Sets up all necessary real-time listeners for the application's data.
+ * Called once a user is successfully logged in.
  */
-function setupRealtimeInventoryListener() {
-    // Guard clause: ensure supabase client and userId are available
-    if (!supabase || !userId) { // userId must be available for this
-        console.warn("Supabase client or user ID not ready for inventory listener. Skipping listener setup.");
+function setupRealtimeListeners() {
+    if (!supabase || !userId) {
+        console.warn("Supabase client or user ID not ready for real-time listeners. Skipping setup.");
         return;
     }
 
-    // Remove any existing real-time subscriptions to prevent duplicate listeners,
-    // especially important when a user logs in after being logged out.
+    // Always remove all channels first to prevent multiple subscriptions if this is called multiple times
+    // (e.g., if the user logs out and logs back in without a full page refresh).
     supabase.removeAllChannels();
 
-    // Subscribe to changes specifically for the 'products' table where 'user_id' matches the current user.
-    // This leverages RLS directly in the real-time subscription.
+    // 1. Real-time Listener for 'products' table (for Inventory View updates)
     supabase
         .channel('public:products')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${userId}` }, payload => {
-            console.log('Real-time change received:', payload);
+            console.log('Real-time product change received!', payload);
             fetchInventoryAndRender(); // Re-fetch and re-render the inventory
+            // Also refresh transaction history as stock updates might be part of transactions
+            fetchTransactionHistoryAndRender();
         })
-        .subscribe(); // Activate the subscription
+        .subscribe();
 
-    // Perform an initial fetch and render when the listener is set up.
+    // 2. Real-time Listener for 'incoming_transactions' table (for Transaction History updates)
+    supabase
+        .channel('public:incoming_transactions')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'incoming_transactions', filter: `user_id=eq.${userId}` }, payload => {
+            console.log('Real-time incoming transaction change received!', payload);
+            fetchTransactionHistoryAndRender(); // Re-fetch and re-render transaction history
+        })
+        .subscribe();
+
+    // 3. Real-time Listener for 'outgoing_transactions' table (for Transaction History updates)
+    supabase
+        .channel('public:outgoing_transactions')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'outgoing_transactions', filter: `user_id=eq.${userId}` }, payload => {
+            console.log('Real-time outgoing transaction change received!', payload);
+            fetchTransactionHistoryAndRender(); // Re-fetch and re-render transaction history
+        })
+        .subscribe();
+
+    // Initial fetches and renders for all relevant data
     fetchInventoryAndRender();
+    fetchTransactionHistoryAndRender();
 }
 
 /**
- * Fetches inventory data from the 'products' table for the current user
- * and then triggers the rendering of the inventory table.
+ * Fetches inventory data from Supabase for the current user and renders it into the table.
+ * This also updates the global `window.allItems` for autocomplete and `currentInventoryData` for filtering.
  */
 async function fetchInventoryAndRender() {
-    // Guard clause: ensure supabase client and userId are available
-    if (!supabase || !userId) { // userId must be available for this
+    if (!supabase || !userId) {
         console.warn("Supabase client or user ID not ready to fetch inventory.");
         return;
     }
 
-    // Fetch data from the 'products' table, filtering by the current user's ID
-    // and ordering by item name for a consistent display.
+    console.log(`Fetching inventory for user: ${userId}`);
     const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -144,12 +167,11 @@ async function fetchInventoryAndRender() {
 
     if (error) {
         console.error('Error fetching inventory:', error.message);
-        // Display an error message if fetching fails
         document.getElementById('inventoryEmptyState').textContent = `Error loading inventory: ${error.message}. Please ensure 'products' table exists and RLS is configured correctly.`;
         document.getElementById('inventoryEmptyState').classList.remove('hidden');
     } else {
-        currentInventoryData = data; // Store the full fetched data for client-side filtering
-        // Update the global list used for item autocompletion in other forms
+        currentInventoryData = data; // Store the full fetched data
+        // Update the global list for item autocompletion
         window.allItems = data.map(item => ({ id: item.item_id, name: item.item_name }));
         filterInventoryTable(); // Render/filter the table with the new data
         console.log("Inventory data fetched and rendered.");
@@ -163,19 +185,16 @@ async function fetchInventoryAndRender() {
 function renderInventoryTable(items) {
     const tableBody = document.getElementById('inventoryTableBody');
     const emptyState = document.getElementById('inventoryEmptyState');
-    tableBody.innerHTML = ''; // Clear any existing table rows
+    tableBody.innerHTML = ''; // Clear existing table rows
 
     if (items.length === 0) {
-        // Show empty state message if no items are provided
         emptyState.classList.remove('hidden');
         emptyState.textContent = 'No items in inventory. Add a new item to get started!';
         return;
     } else {
-        // Hide empty state if items are present
         emptyState.classList.add('hidden');
     }
 
-    // Populate the table with each item's details
     items.forEach(item => {
         const row = tableBody.insertRow();
         row.insertCell().textContent = item.item_id || 'N/A';
@@ -193,7 +212,6 @@ function renderInventoryTable(items) {
  */
 function filterInventoryTable() {
     const searchTerm = document.getElementById('inventorySearch').value.toLowerCase();
-    // Filter items where item ID, item name, or description includes the search term
     const filteredItems = currentInventoryData.filter(item =>
         item.item_id.toLowerCase().includes(searchTerm) ||
         item.item_name.toLowerCase().includes(searchTerm) ||
@@ -202,28 +220,140 @@ function filterInventoryTable() {
     renderInventoryTable(filteredItems); // Re-render the table with filtered results
 }
 
+/**
+ * Fetches all incoming and outgoing transactions for the current user,
+ * combines them, sorts by date, and renders them into the Transaction History table.
+ */
+async function fetchTransactionHistoryAndRender() {
+    if (!supabase || !userId) {
+        console.warn("Supabase client or user ID not ready to fetch transactions.");
+        return;
+    }
+
+    console.log(`Fetching transactions for user: ${userId}`);
+
+    // Fetch incoming transactions
+    const { data: incomingData, error: incomingError } = await supabase
+        .from('incoming_transactions')
+        .select('*')
+        .eq('user_id', userId);
+
+    if (incomingError) {
+        console.error('Error fetching incoming transactions:', incomingError.message);
+        document.getElementById('transactionEmptyState').textContent = `Error loading transactions: ${incomingError.message}`;
+        document.getElementById('transactionEmptyState').classList.remove('hidden');
+        return;
+    }
+
+    // Fetch outgoing transactions
+    const { data: outgoingData, error: outgoingError } = await supabase
+        .from('outgoing_transactions')
+        .select('*')
+        .eq('user_id', userId);
+
+    if (outgoingError) {
+        console.error('Error fetching outgoing transactions:', outgoingError.message);
+        document.getElementById('transactionEmptyState').textContent = `Error loading transactions: ${outgoingError.message}`;
+        document.getElementById('transactionEmptyState').classList.remove('hidden');
+        return;
+    }
+
+    // Combine and format transactions
+    let combinedTransactions = [];
+
+    incomingData.forEach(tx => {
+        combinedTransactions.push({
+            type: 'Incoming',
+            itemId: tx.item_id,
+            quantity: tx.quantity,
+            contact: tx.supplier || 'N/A',
+            refNo: `${tx.delivery_note || 'N/A'} / ${tx.po_number || 'N/A'}`,
+            notes: tx.notes || '',
+            createdAt: tx.created_at
+        });
+    });
+
+    outgoingData.forEach(tx => {
+        combinedTransactions.push({
+            type: 'Outgoing',
+            itemId: tx.item_id,
+            quantity: tx.quantity,
+            contact: tx.customer || 'N/A',
+            refNo: 'N/A', // Outgoing transactions don't have DN/PO numbers by default
+            notes: tx.notes || '',
+            createdAt: tx.created_at
+        });
+    });
+
+    // Sort transactions by creation date (most recent first)
+    combinedTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    currentTransactionData = combinedTransactions; // Store for client-side filtering
+    filterTransactionTable(); // Render/filter the transaction table with the new data
+    console.log("Transaction history fetched and rendered.");
+}
+
+/**
+ * Renders the provided array of transactions into the HTML transaction history table.
+ * @param {Array<Object>} transactions - An array of transaction objects to display.
+ */
+function renderTransactionTable(transactions) {
+    const tableBody = document.getElementById('transactionTableBody');
+    const emptyState = document.getElementById('transactionEmptyState');
+    tableBody.innerHTML = ''; // Clear existing table rows
+
+    if (transactions.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.textContent = 'No transactions found.';
+        return;
+    } else {
+        emptyState.classList.add('hidden');
+    }
+
+    transactions.forEach(tx => {
+        const row = tableBody.insertRow();
+        row.insertCell().textContent = new Date(tx.createdAt).toLocaleString();
+        row.insertCell().textContent = tx.type;
+        row.insertCell().textContent = tx.itemId;
+        row.insertCell().textContent = tx.quantity;
+        row.insertCell().textContent = tx.contact;
+        row.insertCell().textContent = tx.refNo;
+        row.insertCell().textContent = tx.notes;
+    });
+}
+
+/**
+ * Filters the currently displayed transaction table based on search input.
+ * This function uses `currentTransactionData` for client-side filtering.
+ */
+function filterTransactionTable() {
+    const searchTerm = document.getElementById('transactionSearch').value.toLowerCase();
+    const filteredTransactions = currentTransactionData.filter(tx =>
+        (tx.itemId && tx.itemId.toLowerCase().includes(searchTerm)) ||
+        (tx.contact && tx.contact.toLowerCase().includes(searchTerm)) ||
+        (tx.refNo && tx.refNo.toLowerCase().includes(searchTerm)) ||
+        (tx.notes && tx.notes.toLowerCase().includes(searchTerm)) ||
+        (tx.type && tx.type.toLowerCase().includes(searchTerm))
+    );
+    renderTransactionTable(filteredTransactions);
+}
+
 
 // --- UI Helper Functions (for tab switching, messages, loading states) ---
 
 /**
- * Switches between authentication tabs (Sign In / Sign Up forms).
+ * Switches between authentication tabs (currently only Sign In).
  * @param {Event} evt - The event object from the click.
  * @param {string} tabName - The ID of the tab content element to show.
  */
 function showAuthTab(evt, tabName) {
-    let i, tabcontent, tabbuttons;
-
     // Hide all tab content within the authentication screen
-    tabcontent = document.querySelectorAll("#authScreen .tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
+    const tabcontent = document.querySelectorAll("#authScreen .tab-content");
+    tabcontent.forEach(el => el.style.display = "none");
 
     // Deactivate all tab buttons within the authentication screen
-    tabbuttons = document.querySelectorAll("#authScreen .tab-button");
-    for (i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].classList.remove("active");
-    }
+    const tabbuttons = document.querySelectorAll("#authScreen .tab-button");
+    tabbuttons.forEach(el => el.classList.remove("active"));
 
     // Show the selected tab content and activate its button
     document.getElementById(tabName).style.display = "block";
@@ -231,28 +361,29 @@ function showAuthTab(evt, tabName) {
 }
 
 /**
- * Switches between main application tabs (Add Item, Incoming, Outgoing, View Inventory).
+ * Switches between main application tabs (now controlled by sidebar buttons).
  * @param {Event} evt - The event object from the click.
  * @param {string} tabName - The ID of the tab content element to show.
  */
 function openAppTab(evt, tabName) {
-    let i, tabcontent, tabbuttons;
-
     // Hide all tab content within the main application screen
-    tabcontent = document.querySelectorAll("#appScreen .tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
+    const tabcontent = document.querySelectorAll("#appScreen .app-tab-content");
+    tabcontent.forEach(el => el.style.display = "none");
 
-    // Deactivate all tab buttons within the main application screen
-    tabbuttons = document.querySelectorAll("#appScreen .tab-button");
-    for (i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].classList.remove("active");
-    }
+    // Deactivate all sidebar buttons
+    const sidebarbuttons = document.querySelectorAll(".sidebar-button");
+    sidebarbuttons.forEach(el => el.classList.remove("active"));
 
     // Show the selected tab content and activate its button
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.classList.add("active");
+
+    // Re-trigger data fetch/filter if switching to inventory or history tab
+    if (tabName === 'viewInventoryTab') {
+        filterInventoryTable(); // Refresh inventory display
+    } else if (tabName === 'transactionHistoryTab') {
+        filterTransactionTable(); // Refresh transaction history display
+    }
 }
 
 
@@ -265,7 +396,6 @@ function openAppTab(evt, tabName) {
 function showMessage(messageBoxId, message, isSuccess) {
     const messageBox = document.getElementById(messageBoxId);
     messageBox.textContent = message;
-    // Remove previous styling classes and add the appropriate one
     messageBox.classList.remove('hidden', 'message-success', 'message-error');
     if (isSuccess) {
         messageBox.classList.add('message-success');
@@ -288,8 +418,7 @@ function hideMessage(messageBoxId) {
  */
 function showLoading(buttonId) {
     const button = document.getElementById(buttonId);
-    button.disabled = true; // Disable the button to prevent multiple clicks
-    // Change button text and add a loading spinner
+    button.disabled = true;
     button.innerHTML = 'Processing... <span class="loading-spinner"></span>';
 }
 
@@ -300,52 +429,58 @@ function showLoading(buttonId) {
  */
 function hideLoading(buttonId, originalText) {
     const button = document.getElementById(buttonId);
-    button.disabled = false; // Enable the button
-    button.textContent = originalText; // Restore original text
+    button.disabled = false;
+    button.textContent = originalText;
 }
 
 // --- Authentication Forms Submission Handlers ---
 
 // Event listener for the login form submission
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
-    event.preventDefault(); // Prevent default form submission
-    hideMessage('loginMessage'); // Clear any previous messages
-    showLoading('loginBtn'); // Show loading state on button
+    event.preventDefault();
+    hideMessage('loginMessage');
+    showLoading('loginBtn');
 
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
-    // Call Supabase `signInWithPassword` method
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    hideLoading('loginBtn', 'Sign In'); // Hide loading state
+    hideLoading('loginBtn', 'Sign In');
     if (error) {
         console.error('Login error:', error.message);
         showMessage('loginMessage', `Login error: ${error.message}`, false);
     } else {
         showMessage('loginMessage', 'Logged in successfully!', true);
-        this.reset(); // Clear the form fields
-        // The `onAuthStateChange` listener will detect the successful login
-        // and transition to the `appScreen`.
+        this.reset();
+        // The `onAuthStateChange` listener will handle showing the app screen.
     }
 });
 
-// Event listener for the logout button
+// Event listener for the logout buttons (mobile and desktop)
 document.getElementById('logoutBtn').addEventListener('click', async function() {
-    showLoading('logoutBtn'); // Show loading state on button
-    // Call Supabase `signOut` method
+    await handleLogout();
+});
+document.getElementById('logoutBtnDesktop').addEventListener('click', async function() {
+    await handleLogout();
+});
+
+async function handleLogout() {
+    showLoading('logoutBtn'); // Show loading on both, if possible (or just the clicked one)
+    showLoading('logoutBtnDesktop');
+
     const { error } = await supabase.auth.signOut();
     if (error) {
         console.error('Logout error:', error.message);
-        // Display error within the user info bar
-        showMessage('loggedInUserEmail', `Logout failed: ${error.message}`, false);
+        // Using alert for persistent logout error, could be custom modal
+        alert(`Logout failed: ${error.message}`);
     } else {
         console.log('Logged out successfully');
-        // The `onAuthStateChange` listener will detect the logout
-        // and transition back to the `authScreen`.
+        // The `onAuthStateChange` listener will handle showing the auth screen.
     }
-    hideLoading('logoutBtn', 'Logout'); // Hide loading state
-});
+    hideLoading('logoutBtn', 'Logout');
+    hideLoading('logoutBtnDesktop', 'Logout');
+}
 
 
 // --- Application Forms Submission Handlers (Add, Incoming, Outgoing) ---
@@ -356,7 +491,6 @@ document.getElementById('addItemForm').addEventListener('submit', async function
     hideMessage('addItemMessage');
     showLoading('addItemBtn');
 
-    // Ensure user is authenticated before proceeding
     if (!supabase || !userId) {
         showMessage('addItemMessage', 'Authentication required to add items.', false);
         hideLoading('addItemBtn', 'Add Item');
@@ -364,14 +498,13 @@ document.getElementById('addItemForm').addEventListener('submit', async function
     }
 
     const formData = new FormData(this);
-    const itemData = { user_id: userId, current_stock: 0 }; // Initialize with user_id and 0 stock
+    const itemData = { user_id: userId, current_stock: 0 };
     for (const [key, value] of formData.entries()) {
         itemData[key] = value.trim();
     }
     itemData.unit_cost = parseFloat(itemData.unit_cost) || 0;
     itemData.selling_price = parseFloat(itemData.selling_price) || 0;
 
-    // Check for duplicate item_id for the current user to maintain uniqueness
     const { data: existingItems, error: fetchError } = await supabase
         .from('products')
         .select('item_id')
@@ -390,7 +523,6 @@ document.getElementById('addItemForm').addEventListener('submit', async function
         return;
     }
 
-    // Insert the new item into the 'products' table
     const { error } = await supabase
         .from('products')
         .insert([itemData]);
@@ -400,7 +532,7 @@ document.getElementById('addItemForm').addEventListener('submit', async function
         showMessage('addItemMessage', `Error adding item: ${error.message}`, false);
     } else {
         showMessage('addItemMessage', `Item '${itemData.item_name}' added successfully!`, true);
-        this.reset(); // Clear the form
+        this.reset();
     }
     hideLoading('addItemBtn', 'Add Item');
 });
@@ -454,7 +586,7 @@ document.getElementById('incomingForm').addEventListener('submit', async functio
     // Step 2: Record the incoming transaction in `incoming_transactions` table
     const { error: insertError } = await supabase
         .from('incoming_transactions')
-        .insert([transactionData]); // This now includes delivery_note and po_number
+        .insert([transactionData]);
 
     if (insertError) {
         console.error("Error recording incoming transaction:", insertError);
@@ -468,15 +600,15 @@ document.getElementById('incomingForm').addEventListener('submit', async functio
         .from('products')
         .update({ current_stock: newStock })
         .eq('id', product.id)
-        .eq('user_id', userId); // Ensure RLS is respected for update
+        .eq('user_id', userId);
 
     if (updateError) {
         console.error("Error updating stock:", updateError);
         showMessage('incomingMessage', `Error updating stock: ${updateError.message}`, false);
     } else {
         showMessage('incomingMessage', `Incoming stock for '${transactionData.item_id}' recorded successfully!`, true);
-        this.reset(); // Clear the form
-        document.getElementById('incomingAutocompleteList').innerHTML = ''; // Clear autocomplete
+        this.reset();
+        document.getElementById('incomingAutocompleteList').innerHTML = '';
         document.getElementById('incomingAutocompleteList').classList.add('hidden');
     }
     hideLoading('incomingBtn', 'Record Incoming');
@@ -528,7 +660,6 @@ document.getElementById('outgoingForm').addEventListener('submit', async functio
     const product = products[0];
     const currentStock = product.current_stock || 0;
 
-    // Check if sufficient stock is available for outgoing transaction
     if (currentStock < transactionData.quantity) {
         showMessage('outgoingMessage', `Error: Insufficient stock for '${transactionData.item_id}'. Current stock: ${currentStock}, Requested: ${transactionData.quantity}.`, false);
         hideLoading('outgoingBtn', 'Record Outgoing');
@@ -561,8 +692,8 @@ document.getElementById('outgoingForm').addEventListener('submit', async functio
         showMessage('outgoingMessage', `Error updating stock: ${updateError.message}`, false);
     } else {
         showMessage('outgoingMessage', `Outgoing stock for '${transactionData.item_id}' recorded successfully!`, true);
-        this.reset(); // Clear the form
-        document.getElementById('outgoingAutocompleteList').innerHTML = ''; // Clear autocomplete
+        this.reset();
+        document.getElementById('outgoingAutocompleteList').innerHTML = '';
         document.getElementById('outgoingAutocompleteList').classList.add('hidden');
     }
     hideLoading('outgoingBtn', 'Record Outgoing');
@@ -570,7 +701,7 @@ document.getElementById('outgoingForm').addEventListener('submit', async functio
 
 
 // --- Autocomplete Logic ---
-let currentFocus = -1; // To track currently focused item in autocomplete list
+let currentFocus = -1;
 
 /**
  * Filters items based on user input for autocomplete functionality in input fields.
@@ -580,41 +711,35 @@ let currentFocus = -1; // To track currently focused item in autocomplete list
 function filterItems(inputElement, listId) {
     const inputValue = inputElement.value.toLowerCase();
     const autocompleteList = document.getElementById(listId);
-    autocompleteList.innerHTML = ''; // Clear previous suggestions
-    autocompleteList.classList.remove('hidden'); // Ensure the list is visible
-    currentFocus = -1; // Reset keyboard navigation focus
+    autocompleteList.innerHTML = '';
+    autocompleteList.classList.remove('hidden');
+    currentFocus = -1;
 
-    // Hide list if input is empty
     if (!inputValue) {
         autocompleteList.classList.add('hidden');
         return;
     }
 
-    // Filter items from the global 'allItems' array (fetched from Supabase)
     const filteredItems = window.allItems.filter(item =>
         item.id.toLowerCase().includes(inputValue) ||
         item.name.toLowerCase().includes(inputValue)
     );
 
-    // Hide list if no matching items are found
     if (filteredItems.length === 0) {
         autocompleteList.classList.add('hidden');
         return;
     }
 
-    // Populate the autocomplete list with up to 10 suggestions
     filteredItems.slice(0, 10).forEach((item, index) => {
         const div = document.createElement('div');
         div.classList.add('autocomplete-list-item');
-        // Highlight matching parts of the item ID and name
         div.innerHTML = `${highlightMatch(item.id, inputValue)} - ${highlightMatch(item.name, inputValue)}`;
-        div.dataset.itemId = item.id; // Store the full item ID as a data attribute
+        div.dataset.itemId = item.id;
 
-        // Add click event listener to select an item from the list
         div.addEventListener('click', function() {
-            inputElement.value = this.dataset.itemId; // Set input value to selected item ID
-            autocompleteList.classList.add('hidden'); // Hide the list
-            inputElement.focus(); // Keep focus on the input field
+            inputElement.value = this.dataset.itemId;
+            autocompleteList.classList.add('hidden');
+            inputElement.focus();
         });
         autocompleteList.appendChild(div);
     });
@@ -629,12 +754,11 @@ function filterItems(inputElement, listId) {
 function highlightMatch(text, match) {
     const index = text.toLowerCase().indexOf(match);
     if (index > -1) {
-        // Construct string with <strong> tags around the matched part
         return text.substring(0, index) +
                '<strong>' + text.substring(index, index + match.length) + '</strong>' +
                text.substring(index + match.length);
     }
-    return text; // Return original text if no match
+    return text;
 }
 
 // Global event listener for keyboard navigation (ArrowUp, ArrowDown, Enter) in autocomplete lists
@@ -642,7 +766,6 @@ document.addEventListener('keydown', function(e) {
     let autocompleteList;
     let inputElement;
 
-    // Determine which autocomplete list is currently active based on tab visibility
     if (document.getElementById('incomingTab').style.display !== 'none') {
         autocompleteList = document.getElementById('incomingAutocompleteList');
         inputElement = document.getElementById('incomingItemId');
@@ -650,27 +773,26 @@ document.addEventListener('keydown', function(e) {
         autocompleteList = document.getElementById('outgoingAutocompleteList');
         inputElement = document.getElementById('outgoingItemId');
     } else {
-        return; // No autocomplete list is active
+        return;
     }
 
-    // If the list is hidden or empty, do nothing
     if (autocompleteList.classList.contains('hidden')) return;
 
     const items = autocompleteList.querySelectorAll('.autocomplete-list-item');
     if (items.length === 0) return;
 
     if (e.key === 'ArrowDown') {
-        e.preventDefault(); // Prevent page scrolling
-        currentFocus = (currentFocus + 1) % items.length; // Move focus down, loop back to top
-        setActiveItem(items, currentFocus); // Highlight the new focused item
+        e.preventDefault();
+        currentFocus = (currentFocus + 1) % items.length;
+        setActiveItem(items, currentFocus);
     } else if (e.key === 'ArrowUp') {
-        e.preventDefault(); // Prevent page scrolling
-        currentFocus = (currentFocus - 1 + items.length) % items.length; // Move focus up, loop back to bottom
-        setActiveItem(items, currentFocus); // Highlight the new focused item
+        e.preventDefault();
+        currentFocus = (currentFocus - 1 + items.length) % items.length;
+        setActiveItem(items, currentFocus);
     } else if (e.key === 'Enter') {
         if (currentFocus > -1) {
-            e.preventDefault(); // Prevent form submission
-            items[currentFocus].click(); // Simulate a click on the focused item
+            e.preventDefault();
+            items[currentFocus].click();
         }
     }
 });
@@ -681,11 +803,9 @@ document.addEventListener('keydown', function(e) {
  * @param {number} index - The index of the item to activate.
  */
 function setActiveItem(items, index) {
-    // Remove 'selected' class from all items
     items.forEach((item, i) => {
         item.classList.remove('selected');
     });
-    // Add 'selected' class to the item at the specified index and scroll it into view
     if (index > -1 && index < items.length) {
         items[index].classList.add('selected');
         items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -695,16 +815,13 @@ function setActiveItem(items, index) {
 
 // Hide autocomplete list when clicking anywhere outside its container
 document.addEventListener('click', function(event) {
-    // Check if the click occurred outside any autocomplete container
     if (!event.target.closest('.autocomplete-container')) {
-        // Hide both incoming and outgoing autocomplete lists
         document.getElementById('incomingAutocompleteList').classList.add('hidden');
         document.getElementById('outgoingAutocompleteList').classList.add('hidden');
     }
 });
 
 // Initial setup on page load: Initialize Supabase.
-// This function will be called once the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
     initializeSupabase();
 });
