@@ -46,8 +46,13 @@ async function initializeSupabase() {
             // User is logged in
             userId = session.user.id;
             userEmail = session.user.email; // Get the user's email for display
-            document.getElementById('loggedInUserEmailMobile').textContent = `Logged in as: ${userEmail}`;
-            document.getElementById('loggedInUserEmailDesktop').textContent = `Logged in as: ${userEmail}`;
+            
+            // Update email display for both mobile and desktop user info bars
+            const emailMobileElement = document.getElementById('loggedInUserEmailMobile');
+            const emailDesktopElement = document.getElementById('loggedInUserEmailDesktop');
+            if (emailMobileElement) emailMobileElement.textContent = `Logged in as: ${userEmail}`;
+            if (emailDesktopElement) emailDesktopElement.textContent = `Logged in as: ${userEmail}`;
+
             showAppScreen(); // Transition to the main application interface
             setupRealtimeListeners(); // Set up all real-time data listeners for the logged-in user
         } else {
@@ -96,9 +101,28 @@ function showAuthScreen() {
 function showAppScreen() {
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
-    // Default to the first app tab ('Add New Item') when the app screen is shown
-    // Click the first sidebar button (Add New Item)
-    document.querySelector('.sidebar-button.active') || document.querySelector('.sidebar-button').click();
+
+    // Ensure only the first content tab is visible and its sidebar button is active
+    const allAppTabs = document.querySelectorAll("#appScreen .app-tab-content");
+    allAppTabs.forEach(tab => tab.style.display = "none"); // Hide all app content tabs first
+
+    const sidebarButtons = document.querySelectorAll(".sidebar-button");
+    sidebarButtons.forEach(button => button.classList.remove("active")); // Deactivate all sidebar buttons
+
+    // Explicitly show the first tab ('Add New Item') and activate its corresponding button
+    const firstTabContent = document.getElementById('addItemTab');
+    const firstSidebarButton = document.querySelector('.sidebar-button');
+
+    if (firstTabContent) {
+        firstTabContent.style.display = "block";
+    }
+    if (firstSidebarButton) {
+        firstSidebarButton.classList.add("active");
+    }
+
+    // Also trigger initial data fetches for critical tables when the app screen loads
+    fetchInventoryAndRender();
+    fetchTransactionHistoryAndRender();
 }
 
 /**
@@ -145,6 +169,8 @@ function setupRealtimeListeners() {
         .subscribe();
 
     // Initial fetches and renders for all relevant data when listeners are set up
+    // These are already called by showAppScreen, but kept here for robustness
+    // in case setupRealtimeListeners is called independently.
     fetchInventoryAndRender();
     fetchTransactionHistoryAndRender();
 }
