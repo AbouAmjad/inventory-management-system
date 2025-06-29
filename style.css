@@ -44,9 +44,7 @@ body {
     .sidebar {
         margin-right: 1.5rem; /* md:mr-6 */
         margin-bottom: 0; /* remove mobile margin */
-        display: flex; /* flex for internal layout */
-        flex-direction: column; /* stack items vertically */
-        justify-content: space-between; /* push logout to bottom */
+        /* display: flex; flex-direction: column; justify-content: space-between; (already applied by html classes) */
     }
     .container > .main-content { /* Adjust padding for main content when sidebar is present */
         padding: 2rem; /* Consistent padding with desktop container */
@@ -85,33 +83,29 @@ body {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
 }
 
-/* User Info Bar in Sidebar (Mobile vs Desktop) */
+/* User Info Bar in Sidebar (Responsive) */
 .user-info-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     background-color: #374151; /* bg-gray-700 */
     padding: 0.75rem; /* p-3 */
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
 }
-/* Adjustments for desktop user info bar within sidebar */
-.user-info-bar.md\:hidden {
-    display: flex; /* Ensure it's flex on mobile */
-    margin-bottom: 1.5rem; /* mb-6 */
+/* Explicitly control responsive display */
+.user-info-bar.md\:hidden { /* This one is for mobile display */
+    display: flex; /* Always flex on mobile */
 }
-.user-info-bar.hidden.md\:flex { /* This targets the desktop-only user info bar */
+.user-info-bar.hidden.md\:flex { /* This one is for desktop display */
     display: none; /* Hidden by default */
 }
 @media (min-width: 768px) {
-    .user-info-bar.hidden.md\:flex {
-        display: flex; /* Show on desktop */
+    .user-info-bar.md\:hidden { /* Hide mobile version on desktop */
+        display: none;
     }
-    .user-info-bar.md\:hidden {
-        display: none; /* Hide on desktop */
+    .user-info-bar.hidden.md\:flex { /* Show desktop version on desktop */
+        display: flex;
     }
 }
-#loggedInUserEmail, #loggedInUserEmailDesktop {
+#loggedInUserEmailMobile, #loggedInUserEmailDesktop {
     font-size: 1rem; /* text-base */
     font-weight: 600; /* font-semibold */
     color: #d1d5db; /* text-gray-200 */
@@ -121,7 +115,7 @@ body {
     max-width: 70%; /* Limit width to leave space for button */
 }
 
-/* General button styling (for forms and logout button inside user-info-bar) */
+/* General button styling (for forms) */
 button {
     width: 100%; /* w-full */
     display: inline-flex;
@@ -133,32 +127,32 @@ button {
     font-weight: 500; /* font-medium */
     border-radius: 0.5rem; /* rounded-lg */
     color: #ffffff; /* text-white */
-    background-color: #3b82f6; /* bg-blue-600 */ /* Changed to blue for consistency with app theme */
-    transition: background-color 200ms ease-in-out, transform 200ms ease-in-out; /* transition-colors transform */
-    transform: none; /* initial transform */
-    outline: none; /* focus:outline-none */
+    background-color: #3b82f6; /* bg-blue-600 */
+    transition: background-color 200ms ease-in-out, transform 200ms ease-in-out;
+    transform: none;
+    outline: none;
 }
 button:hover {
     background-color: #2563eb; /* hover:bg-blue-700 */
-    transform: scale(1.02); /* Slight scale on hover */
+    transform: scale(1.02);
 }
 button:focus {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 6px rgba(59, 130, 246, 0.2); /* focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 6px rgba(59, 130, 246, 0.2);
 }
 button:disabled {
     background-color: #9ca3af; /* bg-gray-400 */
     cursor: not-allowed;
-    transform: none; /* transform-none */
+    transform: none;
 }
-/* Override for logout buttons in sidebar for smaller size */
-.user-info-bar button {
+/* Override for unified logout buttons for smaller size and red color */
+#logoutBtnUnified, #logoutBtnUnifiedDesktop {
     width: auto;
     padding: 0.25rem 0.75rem; /* px-3 py-1 */
     font-size: 0.875rem; /* text-sm */
     border-radius: 0.375rem; /* rounded-lg */
     background-color: #ef4444; /* bg-red-600 */
 }
-.user-info-bar button:hover {
+#logoutBtnUnified:hover, #logoutBtnUnifiedDesktop:hover {
     background-color: #dc2626; /* hover:bg-red-700 */
     transform: none; /* No scale for these smaller buttons */
 }
@@ -175,9 +169,7 @@ button:disabled {
 
 /* App Tab Content */
 .app-tab-content {
-    /* These styles apply to the content inside each tab (Add Item, Incoming, etc.) */
-    /* They are initially hidden by JS and shown based on active tab */
-    padding: 0; /* No extra padding here as main-content has padding */
+    padding: 0;
 }
 
 /* Form group spacing */
