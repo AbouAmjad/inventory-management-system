@@ -1,5 +1,10 @@
 /* style.css */
 
+/* Add this crucial rule to ensure hidden elements are not displayed */
+.hidden {
+    display: none !important;
+}
+
 /* Base styles applied to body and main container */
 body {
     font-family: 'Inter', sans-serif;
