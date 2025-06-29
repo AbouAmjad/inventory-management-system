@@ -1,10 +1,5 @@
 // script.js
 
-// Supabase Client SDK (will be loaded by index.html)
-// Ensure this script is placed AFTER the Supabase CDN script in index.html,
-// or that you handle modular imports if you're bundling.
-// For this setup, we assume the global `window.supabase` is available.
-
 // YOUR SUPABASE PROJECT URL AND ANON KEY
 const SUPABASE_URL = 'https://vjhikffducpurixlkfjd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y';
@@ -22,7 +17,7 @@ let currentInventoryData = []; // Store the full inventory data for client-side 
 async function initializeSupabase() {
     // Check if the Supabase client is available (from the CDN script loaded in index.html)
     if (typeof window.supabase === 'undefined') {
-        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Supabase SDK not loaded. Check script.js and index.html.';
+        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Supabase SDK not loaded. Check index.html for CDN.';
         console.error('Supabase SDK not found. Make sure the Supabase CDN script is loaded before script.js.');
         return;
     }
@@ -59,15 +54,12 @@ async function initializeSupabase() {
     });
 
     // On initial page load, check if there's an active session.
-    // The onAuthStateChange listener usually handles this, but an explicit
-    // getSession call ensures the UI state is correct immediately.
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
         console.error("Error getting initial session:", error.message);
         showAuthScreen(); // If there's an error getting session, show auth screen
     } else if (session) {
-        // If a session exists, onAuthStateChange will be triggered,
-        // which will set `userId` and call `showAppScreen()`.
+        // If a session exists, onAuthStateChange will be triggered.
         console.log("Initial session found. onAuthStateChange will handle.");
     } else {
         // No active session, so explicitly show the authentication screen.
@@ -76,6 +68,7 @@ async function initializeSupabase() {
     }
 
     // Always ensure the Sign In tab is active initially on the auth screen.
+    // Removed direct click for signUpForm tab as it's removed
     document.querySelector('#authScreen .tab-button').click();
 }
 
@@ -313,40 +306,39 @@ function hideLoading(buttonId, originalText) {
 
 // --- Authentication Forms Submission Handlers ---
 
-// Event listener for the registration form submission
+// Removed register form submission handler as signup is removed from HTML
+/*
 document.getElementById('registerForm').addEventListener('submit', async function(event) {
-    event.preventDefault(); // Prevent default form submission
-    hideMessage('registerMessage'); // Clear any previous messages
-    showLoading('registerBtn'); // Show loading state on button
+    event.preventDefault();
+    hideMessage('registerMessage');
+    showLoading('registerBtn');
 
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-    // Basic password confirmation validation
     if (password !== confirmPassword) {
         showMessage('registerMessage', 'Passwords do not match.', false);
         hideLoading('registerBtn', 'Sign Up');
         return;
     }
 
-    // Call Supabase `signUp` method
     const { error } = await supabase.auth.signUp({ email, password });
 
-    hideLoading('registerBtn', 'Sign Up'); // Hide loading state
+    hideLoading('registerBtn', 'Sign Up');
     if (error) {
         console.error('Sign up error:', error.message);
         showMessage('registerMessage', `Sign up error: ${error.message}`, false);
     } else {
         showMessage('registerMessage', 'Sign up successful! Please sign in.', true);
-        this.reset(); // Clear the form fields
-        // After successful registration, automatically switch to the Sign In tab
+        this.reset();
         document.querySelector('#authScreen #signInForm').style.display = "block";
         document.querySelector('#authScreen #signUpForm').style.display = "none";
         document.querySelector('#authScreen .tab-button:nth-child(2)').classList.remove("active");
         document.querySelector('#authScreen .tab-button:nth-child(1)').classList.add("active");
     }
 });
+*/
 
 // Event listener for the login form submission
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
@@ -596,7 +588,7 @@ document.getElementById('outgoingForm').addEventListener('submit', async functio
         .from('products')
         .update({ current_stock: newStock })
         .eq('id', product.id)
-        .eq('user_id', userId); // Ensure RLS is respected for update
+        .eq('user_id', userId);
 
     if (updateError) {
         console.error("Error updating stock:", updateError);
