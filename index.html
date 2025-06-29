@@ -31,6 +31,8 @@
         label {
             @apply block text-sm font-semibold text-gray-700 mb-1;
         }
+        input[type="email"],
+        input[type="password"],
         input[type="text"],
         input[type="number"],
         textarea {
@@ -111,141 +113,202 @@
         .inventory-table-empty {
             @apply text-center py-8 text-gray-500;
         }
-        #userIdDisplay {
-            @apply text-sm text-gray-600 text-center mb-4 break-words; /* Added break-words for long IDs */
+        #authScreen, #appScreen {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .user-info-bar {
+            @apply flex justify-between items-center bg-gray-50 p-3 rounded-t-lg shadow-sm mb-4;
+        }
+        .user-info-bar button {
+            @apply w-auto py-2 px-4 text-sm bg-red-600 hover:bg-red-700;
+        }
+        #loggedInUserEmail {
+            @apply text-base font-semibold text-gray-700;
         }
     </style>
     <!-- Supabase Client SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div id="mainApp" class="container">
+    <div class="container">
         <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800">Online Inventory System</h1>
-        <div id="userIdDisplay" class="mb-4 text-center">Initializing...</div>
 
-        <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
-            <button class="tab-button active" onclick="openTab(event, 'addItemTab')">Add New Item</button>
-            <button class="tab-button" onclick="openTab(event, 'incomingTab')">Record Incoming</button>
-            <button class="tab-button" onclick="openTab(event, 'outgoingTab')">Record Outgoing</button>
-            <button class="tab-button" onclick="openTab(event, 'viewInventoryTab')">View Inventory</button>
-        </div>
-
-        <!-- Add Item Tab -->
-        <div id="addItemTab" class="tab-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-5">Add New Item</h2>
-            <form id="addItemForm">
-                <div class="form-group">
-                    <label for="itemId">Item ID (Unique)*</label>
-                    <input type="text" id="itemId" name="item_id" placeholder="e.g., SKU-001" required>
-                </div>
-                <div class="form-group">
-                    <label for="itemName">Item Name*</label>
-                    <input type="text" id="itemName" name="item_name" placeholder="e.g., Wireless Mouse" required>
-                </div>
-                <div class="form-group">
-                    <label for="itemDescription">Description</label>
-                    <textarea id="itemDescription" name="description" rows="3" placeholder="e.g., Ergonomic wireless mouse with 2.4GHz connectivity"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="unitCost">Unit Cost*</label>
-                    <input type="number" id="unitCost" name="unit_cost" step="0.01" min="0" placeholder="e.g., 15.50" required>
-                </div>
-                <div class="form-group">
-                    <label for="sellingPrice">Selling Price*</label>
-                    <input type="number" id="sellingPrice" name="selling_price" step="0.01" min="0" placeholder="e.g., 29.99" required>
-                </div>
-                <button type="submit" id="addItemBtn">Add Item</button>
-                <div id="addItemMessage" class="message-box hidden"></div>
-            </form>
-        </div>
-
-        <!-- Record Incoming Tab -->
-        <div id="incomingTab" class="tab-content hidden">
-            <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Incoming Stock</h2>
-            <form id="incomingForm">
-                <div class="form-group autocomplete-container">
-                    <label for="incomingItemId">Item ID*</label>
-                    <input type="text" id="incomingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'incomingAutocompleteList')" autocomplete="off">
-                    <div id="incomingAutocompleteList" class="autocomplete-list hidden"></div>
-                </div>
-                <div class="form-group">
-                    <label for="incomingQuantity">Quantity*</label>
-                    <input type="number" id="incomingQuantity" name="quantity" min="1" placeholder="e.g., 50" required>
-                </div>
-                <div class="form-group">
-                    <label for="incomingSupplier">Supplier</label>
-                    <input type="text" id="incomingSupplier" name="supplier" placeholder="e.g., Tech Distributors Inc.">
-                </div>
-                <div class="form-group">
-                    <label for="incomingDeliveryNote">Delivery Note Number</label>
-                    <input type="text" id="incomingDeliveryNote" name="delivery_note" placeholder="e.g., DN-2025-001">
-                </div>
-                <div class="form-group">
-                    <label for="incomingPoNumber">Purchase Order (PO) Number</label>
-                    <input type="text" id="incomingPoNumber" name="po_number" placeholder="e.g., PO-ABC-456">
-                </div>
-                <div class="form-group">
-                    <label for="incomingNotes">Notes</label>
-                    <textarea id="incomingNotes" name="notes" rows="3" placeholder="e.g., First batch of 2025"></textarea>
-                </div>
-                <button type="submit" id="incomingBtn">Record Incoming</button>
-                <div id="incomingMessage" class="message-box hidden"></div>
-            </form>
-        </div>
-
-        <!-- Record Outgoing Tab -->
-        <div id="outgoingTab" class="tab-content hidden">
-            <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Outgoing Stock</h2>
-            <form id="outgoingForm">
-                <div class="form-group autocomplete-container">
-                    <label for="outgoingItemId">Item ID*</label>
-                    <input type="text" id="outgoingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'outgoingAutocompleteList')" autocomplete="off">
-                    <div id="outgoingAutocompleteList" class="autocomplete-list hidden"></div>
-                </div>
-                <div class="form-group">
-                    <label for="outgoingQuantity">Quantity*</label>
-                    <input type="number" id="outgoingQuantity" name="quantity" min="1" placeholder="e.g., 10" required>
-                </div>
-                <div class="form-group">
-                    <label for="outgoingCustomer">Customer</label>
-                    <input type="text" id="outgoingCustomer" name="customer" placeholder="e.g., John Doe / ABC Corp.">
-                </div>
-                <div class="form-group">
-                    <label for="outgoingNotes">Notes</label>
-                    <textarea id="outgoingNotes" name="notes" rows="3" placeholder="e.g., Sold via online store"></textarea>
-                </div>
-                <button type="submit" id="outgoingBtn">Record Outgoing</button>
-                <div id="outgoingMessage" class="message-box hidden"></div>
-            </form>
-        </div>
-
-        <!-- View Inventory Tab -->
-        <div id="viewInventoryTab" class="tab-content hidden">
-            <h2 class="text-2xl font-bold text-gray-800 mb-5">Current Inventory</h2>
-            <div class="form-group">
-                <label for="inventorySearch">Search Item (ID or Name)</label>
-                <input type="text" id="inventorySearch" placeholder="Search by Item ID or Item Name..." onkeyup="filterInventoryTable()">
+        <!-- Authentication Screen (visible when not logged in) -->
+        <div id="authScreen" class="p-6 md:p-8">
+            <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
+                <button class="tab-button active" onclick="showAuthTab(event, 'signInForm')">Sign In</button>
+                <button class="tab-button" onclick="showAuthTab(event, 'signUpForm')">Sign Up</button>
             </div>
-            <div class="inventory-table-container">
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>Item ID</th>
-                            <th>Item Name</th>
-                            <th>Description</th>
-                            <th>Unit Cost</th>
-                            <th>Selling Price</th>
-                            <th>Current Stock</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTableBody">
-                        <!-- Inventory items will be rendered here by JavaScript -->
-                    </tbody>
-                </table>
-                <p id="inventoryEmptyState" class="inventory-table-empty">No items in inventory. Add a new item to get started!</p>
+
+            <!-- Sign In Form -->
+            <div id="signInForm" class="tab-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Sign In</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="your@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" id="loginBtn">Sign In</button>
+                    <div id="loginMessage" class="message-box hidden"></div>
+                </form>
+            </div>
+
+            <!-- Sign Up Form -->
+            <div id="signUpForm" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Sign Up</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" placeholder="your@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerConfirmPassword">Confirm Password</label>
+                        <input type="password" id="registerConfirmPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" id="registerBtn">Sign Up</button>
+                    <div id="registerMessage" class="message-box hidden"></div>
+                </form>
             </div>
         </div>
 
+        <!-- Main Application Screen (visible when logged in) -->
+        <div id="appScreen" class="hidden">
+            <div class="user-info-bar">
+                <span id="loggedInUserEmail" class="text-base font-semibold text-gray-700"></span>
+                <button id="logoutBtn" class="text-sm">Logout</button>
+            </div>
+
+            <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
+                <button class="tab-button active" onclick="openAppTab(event, 'addItemTab')">Add New Item</button>
+                <button class="tab-button" onclick="openAppTab(event, 'incomingTab')">Record Incoming</button>
+                <button class="tab-button" onclick="openAppTab(event, 'outgoingTab')">Record Outgoing</button>
+                <button class="tab-button" onclick="openAppTab(event, 'viewInventoryTab')">View Inventory</button>
+            </div>
+
+            <!-- Add Item Tab -->
+            <div id="addItemTab" class="tab-content">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Add New Item</h2>
+                <form id="addItemForm">
+                    <div class="form-group">
+                        <label for="itemId">Item ID (Unique)*</label>
+                        <input type="text" id="itemId" name="item_id" placeholder="e.g., SKU-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemName">Item Name*</label>
+                        <input type="text" id="itemName" name="item_name" placeholder="e.g., Wireless Mouse" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea id="itemDescription" name="description" rows="3" placeholder="e.g., Ergonomic wireless mouse with 2.4GHz connectivity"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="unitCost">Unit Cost*</label>
+                        <input type="number" id="unitCost" name="unit_cost" step="0.01" min="0" placeholder="e.g., 15.50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sellingPrice">Selling Price*</label>
+                        <input type="number" id="sellingPrice" name="selling_price" step="0.01" min="0" placeholder="e.g., 29.99" required>
+                    </div>
+                    <button type="submit" id="addItemBtn">Add Item</button>
+                    <div id="addItemMessage" class="message-box hidden"></div>
+                </form>
+            </div>
+
+            <!-- Record Incoming Tab -->
+            <div id="incomingTab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Incoming Stock</h2>
+                <form id="incomingForm">
+                    <div class="form-group autocomplete-container">
+                        <label for="incomingItemId">Item ID*</label>
+                        <input type="text" id="incomingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'incomingAutocompleteList')" autocomplete="off">
+                        <div id="incomingAutocompleteList" class="autocomplete-list hidden"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="incomingQuantity">Quantity*</label>
+                        <input type="number" id="incomingQuantity" name="quantity" min="1" placeholder="e.g., 50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="incomingSupplier">Supplier</label>
+                        <input type="text" id="incomingSupplier" name="supplier" placeholder="e.g., Tech Distributors Inc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="incomingDeliveryNote">Delivery Note Number</label>
+                        <input type="text" id="incomingDeliveryNote" name="delivery_note" placeholder="e.g., DN-2025-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="incomingPoNumber">Purchase Order (PO) Number</label>
+                        <input type="text" id="incomingPoNumber" name="po_number" placeholder="e.g., PO-ABC-456">
+                    </div>
+                    <div class="form-group">
+                        <label for="incomingNotes">Notes</label>
+                        <textarea id="incomingNotes" name="notes" rows="3" placeholder="e.g., First batch of 2025"></textarea>
+                    </div>
+                    <button type="submit" id="incomingBtn">Record Incoming</button>
+                    <div id="incomingMessage" class="message-box hidden"></div>
+                </form>
+            </div>
+
+            <!-- Record Outgoing Tab -->
+            <div id="outgoingTab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Outgoing Stock</h2>
+                <form id="outgoingForm">
+                    <div class="form-group autocomplete-container">
+                        <label for="outgoingItemId">Item ID*</label>
+                        <input type="text" id="outgoingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'outgoingAutocompleteList')" autocomplete="off">
+                        <div id="outgoingAutocompleteList" class="autocomplete-list hidden"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="outgoingQuantity">Quantity*</label>
+                        <input type="number" id="outgoingQuantity" name="quantity" min="1" placeholder="e.g., 10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="outgoingCustomer">Customer</label>
+                        <input type="text" id="outgoingCustomer" name="customer" placeholder="e.g., John Doe / ABC Corp.">
+                    </div>
+                    <div class="form-group">
+                        <label for="outgoingNotes">Notes</label>
+                        <textarea id="outgoingNotes" name="notes" rows="3" placeholder="e.g., Sold via online store"></textarea>
+                    </div>
+                    <button type="submit" id="outgoingBtn">Record Outgoing</button>
+                    <div id="outgoingMessage" class="message-box hidden"></div>
+                </form>
+            </div>
+
+            <!-- View Inventory Tab -->
+            <div id="viewInventoryTab" class="tab-content hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-5">Current Inventory</h2>
+                <div class="form-group">
+                    <label for="inventorySearch">Search Item (ID or Name)</label>
+                    <input type="text" id="inventorySearch" placeholder="Search by Item ID or Item Name..." onkeyup="filterInventoryTable()">
+                </div>
+                <div class="inventory-table-container">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th>Item ID</th>
+                                <th>Item Name</th>
+                                <th>Description</th>
+                                <th>Unit Cost</th>
+                                <th>Selling Price</th>
+                                <th>Current Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <!-- Inventory items will be rendered here by JavaScript -->
+                        </tbody>
+                    </table>
+                    <p id="inventoryEmptyState" class="inventory-table-empty">No items in inventory. Add a new item to get started!</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -254,43 +317,83 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y';
 
         let supabase;
-        let userId = 'anonymous_initializing'; // Initial state for user ID
-        window.allItems = []; // Global array for autocomplete items, will contain full item data
+        let userId = null; // Will be set after successful login
+        window.allItems = []; // Global array for autocomplete items
         let currentInventoryData = []; // Store the full inventory data for client-side filtering
 
-        // Initialize Supabase and handle anonymous authentication
+        // --- Authentication & Initialization ---
+
         async function initializeSupabase() {
             // Basic check for placeholder values
             if (SUPABASE_URL.includes('YOUR_SUPABASE_URL') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY')) {
-                document.getElementById('userIdDisplay').innerHTML = '<span class="text-red-600">ERROR: Please replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in the code!</span>';
+                document.getElementById('loggedInUserEmail').textContent = 'ERROR: Please set Supabase URL/Key!';
                 return;
             }
 
             // Create Supabase client
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Attempt anonymous sign-in
-            const { data, error } = await supabase.auth.signInAnonymously();
+            // Listen for authentication state changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                console.log('Auth event:', event, 'Session:', session);
+                if (session) {
+                    userId = session.user.id;
+                    document.getElementById('loggedInUserEmail').textContent = `Logged in as: ${session.user.email}`;
+                    showAppScreen();
+                    setupRealtimeInventoryListener(); // Set up listener AFTER user is logged in
+                } else {
+                    userId = null;
+                    showAuthScreen();
+                    // Clear inventory data if logged out
+                    currentInventoryData = [];
+                    window.allItems = [];
+                    renderInventoryTable([]);
+                }
+            });
+
+            // Check initial session status on page load
+            const { data: { session }, error } = await supabase.auth.getSession();
             if (error) {
-                console.error('Error signing in anonymously:', error.message);
-                document.getElementById('userIdDisplay').textContent = `Authentication Error: ${error.message}`;
-            } else if (data.user) {
-                userId = data.user.id;
-                document.getElementById('userIdDisplay').textContent = `Logged in as: ${userId}`;
-                console.log('Signed in anonymously with user ID:', userId);
-                setupRealtimeInventoryListener(); // Start listening for data once authenticated
+                console.error("Error getting initial session:", error.message);
+                showAuthScreen(); // If error, default to auth screen
+            } else if (session) {
+                // If session exists, onAuthStateChange will handle setting userId and showing app screen
+                // No explicit action needed here, onAuthStateChange will fire
+            } else {
+                // No active session, show auth screen
+                showAuthScreen();
             }
+
+            // Initially display sign-in tab
+            document.querySelector('#authScreen .tab-button').click();
         }
+
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('appScreen').classList.add('hidden');
+        }
+
+        function showAppScreen() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            // When app screen is shown, default to Add Item tab
+            document.querySelector('#appScreen .tab-button').click();
+        }
+
+        // --- Supabase Data Interactions (Identical to previous, but now relies on `userId` from auth) ---
 
         /**
          * Sets up a real-time listener for the 'products' table in Supabase.
          * This updates the inventory table whenever data changes for the current user.
          */
         function setupRealtimeInventoryListener() {
-            if (!supabase || !userId || userId === 'anonymous_initializing') {
+            if (!supabase || !userId) { // userId must be available for this
                 console.warn("Supabase client or user ID not ready for inventory listener. Skipping listener setup.");
                 return;
             }
+
+            // Ensure previous subscriptions are removed before creating new ones for a new user
+            supabase.removeAllChannels(); // Disconnects all existing subscriptions
 
             // Subscribe to changes *for the current user's data only*
             supabase
@@ -301,14 +404,14 @@
                 })
                 .subscribe(); // Subscribe to real-time changes
 
-            fetchInventoryAndRender(); // Initial fetch and render
+            fetchInventoryAndRender(); // Initial fetch and render for the logged-in user
         }
 
         /**
          * Fetches inventory data from Supabase and renders it into the table.
          */
         async function fetchInventoryAndRender() {
-            if (!supabase || !userId || userId === 'anonymous_initializing') {
+            if (!supabase || !userId) { // userId must be available for this
                 console.warn("Supabase client or user ID not ready to fetch inventory.");
                 return;
             }
@@ -369,28 +472,28 @@
             const filteredItems = currentInventoryData.filter(item =>
                 item.item_id.toLowerCase().includes(searchTerm) ||
                 item.item_name.toLowerCase().includes(searchTerm) ||
-                item.description.toLowerCase().includes(searchTerm)
+                (item.description && item.description.toLowerCase().includes(searchTerm)) // Check description only if it exists
             );
             renderInventoryTable(filteredItems);
         }
 
 
-        // --- Helper Functions for UI ---
+        // --- UI Helper Functions (adapted for auth tabs vs app tabs) ---
 
         /**
-         * Function to switch between tabs.
+         * Function to switch between authentication tabs (Sign In / Sign Up).
          * @param {Event} evt - The click event.
          * @param {string} tabName - The ID of the tab content to show.
          */
-        function openTab(evt, tabName) {
+        function showAuthTab(evt, tabName) {
             let i, tabcontent, tabbuttons;
 
-            tabcontent = document.getElementsByClassName("tab-content");
+            tabcontent = document.querySelectorAll("#authScreen .tab-content");
             for (i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
 
-            tabbuttons = document.getElementsByClassName("tab-button");
+            tabbuttons = document.querySelectorAll("#authScreen .tab-button");
             for (i = 0; i < tabbuttons.length; i++) {
                 tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
             }
@@ -398,6 +501,29 @@
             document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
+
+        /**
+         * Function to switch between main app tabs.
+         * @param {Event} evt - The click event.
+         * @param {string} tabName - The ID of the tab content to show.
+         */
+        function openAppTab(evt, tabName) {
+            let i, tabcontent, tabbuttons;
+
+            tabcontent = document.querySelectorAll("#appScreen .tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            tabbuttons = document.querySelectorAll("#appScreen .tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+            }
+
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
 
         /**
          * Shows a message in a designated message box.
@@ -445,7 +571,81 @@
             button.textContent = originalText;
         }
 
-        // --- Form Submissions ---
+        // --- Authentication Forms Submission ---
+
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            hideMessage('registerMessage');
+            showLoading('registerBtn');
+
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('registerMessage', 'Passwords do not match.', false);
+                hideLoading('registerBtn', 'Sign Up');
+                return;
+            }
+
+            // Supabase sign up
+            const { error } = await supabase.auth.signUp({ email, password });
+
+            hideLoading('registerBtn', 'Sign Up');
+            if (error) {
+                console.error('Sign up error:', error.message);
+                showMessage('registerMessage', `Sign up error: ${error.message}`, false);
+            } else {
+                showMessage('registerMessage', 'Sign up successful! Please sign in.', true);
+                this.reset();
+                // Optionally switch to login tab after successful registration
+                document.getElementById('signInForm').style.display = "block";
+                document.getElementById('signUpForm').style.display = "none";
+                document.querySelector('#authScreen #signInForm + .tab-button').className = document.querySelector('#authScreen #signInForm + .tab-button').className.replace(" active", "");
+                document.querySelector('#authScreen .tab-button').className += " active";
+            }
+        });
+
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            hideMessage('loginMessage');
+            showLoading('loginBtn');
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Supabase sign in
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+            hideLoading('loginBtn', 'Sign In');
+            if (error) {
+                console.error('Login error:', error.message);
+                showMessage('loginMessage', `Login error: ${error.message}`, false);
+            } else {
+                showMessage('loginMessage', 'Logged in successfully!', true);
+                this.reset();
+                // onAuthStateChange will handle showing the app screen
+            }
+        });
+
+        // Logout Button
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            showLoading('logoutBtn');
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Logout error:', error.message);
+                alert(`Logout failed: ${error.message}`); // Using alert here for simplicity, custom message box could be built
+            } else {
+                console.log('Logged out successfully');
+                // onAuthStateChange will handle showing the auth screen
+            }
+            hideLoading('logoutBtn', 'Logout');
+        });
+
+
+        // --- App Forms Submission (Add, Incoming, Outgoing) ---
 
         // Add Item Form
         document.getElementById('addItemForm').addEventListener('submit', async function(event) {
@@ -453,22 +653,20 @@
             hideMessage('addItemMessage');
             showLoading('addItemBtn');
 
-            if (!supabase || !userId || userId === 'anonymous_initializing') {
-                showMessage('addItemMessage', 'System not ready. Please wait for initialization.', false);
+            if (!supabase || !userId) {
+                showMessage('addItemMessage', 'Authentication required to add items.', false);
                 hideLoading('addItemBtn', 'Add Item');
                 return;
             }
 
             const formData = new FormData(this);
-            const itemData = { user_id: userId, current_stock: 0 }; // Always include user_id and initial stock
+            const itemData = { user_id: userId, current_stock: 0 };
             for (const [key, value] of formData.entries()) {
-                // Adjust field names to match Supabase schema (snake_case)
                 itemData[key] = value.trim();
             }
             itemData.unit_cost = parseFloat(itemData.unit_cost) || 0;
             itemData.selling_price = parseFloat(itemData.selling_price) || 0;
 
-            // Check for duplicate item_id for the current user before adding
             const { data: existingItems, error: fetchError } = await supabase
                 .from('products')
                 .select('item_id')
@@ -487,7 +685,6 @@
                 return;
             }
 
-            // Insert new item
             const { error } = await supabase
                 .from('products')
                 .insert([itemData]);
@@ -497,7 +694,7 @@
                 showMessage('addItemMessage', `Error adding item: ${error.message}`, false);
             } else {
                 showMessage('addItemMessage', `Item '${itemData.item_name}' added successfully!`, true);
-                this.reset(); // Clear form on success
+                this.reset();
             }
             hideLoading('addItemBtn', 'Add Item');
         });
@@ -508,8 +705,8 @@
             hideMessage('incomingMessage');
             showLoading('incomingBtn');
 
-            if (!supabase || !userId || userId === 'anonymous_initializing') {
-                showMessage('incomingMessage', 'System not ready. Please wait for initialization.', false);
+            if (!supabase || !userId) {
+                showMessage('incomingMessage', 'Authentication required to record incoming stock.', false);
                 hideLoading('incomingBtn', 'Record Incoming');
                 return;
             }
@@ -527,7 +724,6 @@
                 return;
             }
 
-            // 1. Find the product and its current stock
             const { data: products, error: fetchProductError } = await supabase
                 .from('products')
                 .select('id, current_stock')
@@ -548,7 +744,6 @@
             const product = products[0];
             const newStock = (product.current_stock || 0) + transactionData.quantity;
 
-            // 2. Record the incoming transaction
             const { error: insertError } = await supabase
                 .from('incoming_transactions')
                 .insert([transactionData]);
@@ -560,17 +755,15 @@
                 return;
             }
 
-            // 3. Update the product's current stock
             const { error: updateError } = await supabase
                 .from('products')
                 .update({ current_stock: newStock })
                 .eq('id', product.id)
-                .eq('user_id', userId); // Crucial for RLS
+                .eq('user_id', userId);
 
             if (updateError) {
                 console.error("Error updating stock:", updateError);
                 showMessage('incomingMessage', `Error updating stock: ${updateError.message}`, false);
-                // Consider rolling back the transaction if stock update fails, for robustness
             } else {
                 showMessage('incomingMessage', `Incoming stock for '${transactionData.item_id}' recorded successfully!`, true);
                 this.reset();
@@ -586,8 +779,8 @@
             hideMessage('outgoingMessage');
             showLoading('outgoingBtn');
 
-            if (!supabase || !userId || userId === 'anonymous_initializing') {
-                showMessage('outgoingMessage', 'System not ready. Please wait for initialization.', false);
+            if (!supabase || !userId) {
+                showMessage('outgoingMessage', 'Authentication required to record outgoing stock.', false);
                 hideLoading('outgoingBtn', 'Record Outgoing');
                 return;
             }
@@ -605,7 +798,6 @@
                 return;
             }
 
-            // 1. Find the product and its current stock
             const { data: products, error: fetchProductError } = await supabase
                 .from('products')
                 .select('id, current_stock')
@@ -634,7 +826,6 @@
 
             const newStock = currentStock - transactionData.quantity;
 
-            // 2. Record the outgoing transaction
             const { error: insertError } = await supabase
                 .from('outgoing_transactions')
                 .insert([transactionData]);
@@ -646,17 +837,15 @@
                 return;
             }
 
-            // 3. Update the product's current stock
             const { error: updateError } = await supabase
                 .from('products')
                 .update({ current_stock: newStock })
                 .eq('id', product.id)
-                .eq('user_id', userId); // Crucial for RLS
+                .eq('user_id', userId);
 
             if (updateError) {
                 console.error("Error updating stock:", updateError);
                 showMessage('outgoingMessage', `Error updating stock: ${updateError.message}`, false);
-                // Consider rolling back the transaction if stock update fails, for robustness
             } else {
                 showMessage('outgoingMessage', `Outgoing stock for '${transactionData.item_id}' recorded successfully!`, true);
                 this.reset();
@@ -666,7 +855,8 @@
             hideLoading('outgoingBtn', 'Record Outgoing');
         });
 
-        // --- Autocomplete Logic ---
+        // --- Autocomplete Logic (Remains largely the same) ---
+
         let currentFocus = -1;
 
         /**
@@ -677,9 +867,9 @@
         function filterItems(inputElement, listId) {
             const inputValue = inputElement.value.toLowerCase();
             const autocompleteList = document.getElementById(listId);
-            autocompleteList.innerHTML = ''; // Clear previous suggestions
+            autocompleteList.innerHTML = '';
             autocompleteList.classList.remove('hidden');
-            currentFocus = -1; // Reset focus on new input
+            currentFocus = -1;
 
             if (!inputValue) {
                 autocompleteList.classList.add('hidden');
@@ -696,15 +886,15 @@
                 return;
             }
 
-            filteredItems.slice(0, 10).forEach((item, index) => { // Show max 10 suggestions
+            filteredItems.slice(0, 10).forEach((item, index) => {
                 const div = document.createElement('div');
                 div.classList.add('autocomplete-list-item');
                 div.innerHTML = `${highlightMatch(item.id, inputValue)} - ${highlightMatch(item.name, inputValue)}`;
-                div.dataset.itemId = item.id; // Store item ID
+                div.dataset.itemId = item.id;
                 div.addEventListener('click', function() {
                     inputElement.value = this.dataset.itemId;
                     autocompleteList.classList.add('hidden');
-                    inputElement.focus(); // Keep focus on the input after selection
+                    inputElement.focus();
                 });
                 autocompleteList.appendChild(div);
             });
@@ -738,7 +928,7 @@
                 autocompleteList = document.getElementById('outgoingAutocompleteList');
                 inputElement = document.getElementById('outgoingItemId');
             } else {
-                return; // Not in a tab with autocomplete
+                return;
             }
 
             if (autocompleteList.classList.contains('hidden')) return;
@@ -773,7 +963,7 @@
             });
             if (index > -1 && index < items.length) {
                 items[index].classList.add('selected');
-                items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); // Scroll to active item
+                items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             }
         }
 
@@ -786,12 +976,9 @@
             }
         });
 
-        // Initial setup: activate the first tab on load
-        document.addEventListener('DOMContentLoaded', (event) => {
-            // Initialize Supabase client and authentication
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
             initializeSupabase();
-            // Simulate click on the first tab button to show its content
-            document.querySelector('.tab-button').click();
         });
     </script>
 </body>
