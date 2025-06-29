@@ -22,7 +22,7 @@ async function initializeSupabase() {
     // Basic check if Supabase SDK is loaded (it's loaded via CDN in index.html)
     if (typeof window.supabase === 'undefined') {
         console.error('Supabase SDK not found. Make sure the Supabase CDN script is loaded before script.js.');
-        document.getElementById('loggedInUserEmail').textContent = 'Error: Supabase SDK not loaded!';
+        document.getElementById('loggedInUserEmailMobile').textContent = 'Error: Supabase SDK not loaded!';
         document.getElementById('loggedInUserEmailDesktop').textContent = 'Error: Supabase SDK not loaded!';
         return;
     }
@@ -30,7 +30,7 @@ async function initializeSupabase() {
     // Basic check for placeholder Supabase credentials
     if (SUPABASE_URL.includes('YOUR_SUPABASE_URL') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE_ANON_KEY')) {
         console.error('Supabase URL or Anon Key not set in script.js!');
-        document.getElementById('loggedInUserEmail').textContent = 'ERROR: Set Supabase URL/Key!';
+        document.getElementById('loggedInUserEmailMobile').textContent = 'ERROR: Set Supabase URL/Key!';
         document.getElementById('loggedInUserEmailDesktop').textContent = 'ERROR: Set Supabase URL/Key!';
         return;
     }
@@ -46,7 +46,7 @@ async function initializeSupabase() {
             // User is logged in
             userId = session.user.id;
             userEmail = session.user.email; // Get the user's email for display
-            document.getElementById('loggedInUserEmail').textContent = `Logged in as: ${userEmail}`;
+            document.getElementById('loggedInUserEmailMobile').textContent = `Logged in as: ${userEmail}`;
             document.getElementById('loggedInUserEmailDesktop').textContent = `Logged in as: ${userEmail}`;
             showAppScreen(); // Transition to the main application interface
             setupRealtimeListeners(); // Set up all real-time data listeners for the logged-in user
@@ -97,6 +97,7 @@ function showAppScreen() {
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     // Default to the first app tab ('Add New Item') when the app screen is shown
+    // Click the first sidebar button (Add New Item)
     document.querySelector('.sidebar-button.active') || document.querySelector('.sidebar-button').click();
 }
 
@@ -115,13 +116,13 @@ function setupRealtimeListeners() {
     supabase.removeAllChannels();
 
     // 1. Real-time Listener for 'products' table (for Inventory View updates)
+    // This listener is critical for real-time stock updates.
     supabase
         .channel('public:products')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `user_id=eq.${userId}` }, payload => {
             console.log('Real-time product change received!', payload);
             fetchInventoryAndRender(); // Re-fetch and re-render the inventory
-            // Also refresh transaction history as stock updates might be part of transactions
-            fetchTransactionHistoryAndRender();
+            fetchTransactionHistoryAndRender(); // Also refresh transaction history as product changes might affect it
         })
         .subscribe();
 
@@ -143,7 +144,7 @@ function setupRealtimeListeners() {
         })
         .subscribe();
 
-    // Initial fetches and renders for all relevant data
+    // Initial fetches and renders for all relevant data when listeners are set up
     fetchInventoryAndRender();
     fetchTransactionHistoryAndRender();
 }
@@ -158,10 +159,10 @@ async function fetchInventoryAndRender() {
         return;
     }
 
-    console.log(`Fetching inventory for user: ${userId}`);
+    console.log(`Attempting to fetch inventory for user: ${userId}`);
     const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*') // Select all columns, including current_stock
         .eq('user_id', userId)
         .order('item_name', { ascending: true });
 
@@ -170,11 +171,12 @@ async function fetchInventoryAndRender() {
         document.getElementById('inventoryEmptyState').textContent = `Error loading inventory: ${error.message}. Please ensure 'products' table exists and RLS is configured correctly.`;
         document.getElementById('inventoryEmptyState').classList.remove('hidden');
     } else {
+        console.log("Inventory data fetched successfully:", data);
         currentInventoryData = data; // Store the full fetched data
         // Update the global list for item autocompletion
         window.allItems = data.map(item => ({ id: item.item_id, name: item.item_name }));
         filterInventoryTable(); // Render/filter the table with the new data
-        console.log("Inventory data fetched and rendered.");
+        console.log("Inventory data rendered.");
     }
 }
 
@@ -202,7 +204,8 @@ function renderInventoryTable(items) {
         row.insertCell().textContent = item.description || '';
         row.insertCell().textContent = `$${(parseFloat(item.unit_cost) || 0).toFixed(2)}`;
         row.insertCell().textContent = `$${(parseFloat(item.selling_price) || 0).toFixed(2)}`;
-        row.insertCell().textContent = item.current_stock !== undefined ? item.current_stock : 'N/A';
+        // Ensure current_stock is displayed correctly, even if it's 0 or null
+        row.insertCell().textContent = item.current_stock !== null && item.current_stock !== undefined ? item.current_stock : '0';
     });
 }
 
@@ -230,7 +233,7 @@ async function fetchTransactionHistoryAndRender() {
         return;
     }
 
-    console.log(`Fetching transactions for user: ${userId}`);
+    console.log(`Attempting to fetch transactions for user: ${userId}`);
 
     // Fetch incoming transactions
     const { data: incomingData, error: incomingError } = await supabase
@@ -240,10 +243,11 @@ async function fetchTransactionHistoryAndRender() {
 
     if (incomingError) {
         console.error('Error fetching incoming transactions:', incomingError.message);
-        document.getElementById('transactionEmptyState').textContent = `Error loading transactions: ${incomingError.message}`;
+        document.getElementById('transactionEmptyState').textContent = `Error loading incoming transactions: ${incomingError.message}`;
         document.getElementById('transactionEmptyState').classList.remove('hidden');
         return;
     }
+    console.log("Incoming data:", incomingData);
 
     // Fetch outgoing transactions
     const { data: outgoingData, error: outgoingError } = await supabase
@@ -253,10 +257,12 @@ async function fetchTransactionHistoryAndRender() {
 
     if (outgoingError) {
         console.error('Error fetching outgoing transactions:', outgoingError.message);
-        document.getElementById('transactionEmptyState').textContent = `Error loading transactions: ${outgoingError.message}`;
+        document.getElementById('transactionEmptyState').textContent = `Error loading outgoing transactions: ${outgoingError.message}`;
         document.getElementById('transactionEmptyState').classList.remove('hidden');
         return;
     }
+    console.log("Outgoing data:", outgoingData);
+
 
     // Combine and format transactions
     let combinedTransactions = [];
@@ -267,7 +273,8 @@ async function fetchTransactionHistoryAndRender() {
             itemId: tx.item_id,
             quantity: tx.quantity,
             contact: tx.supplier || 'N/A',
-            refNo: `${tx.delivery_note || 'N/A'} / ${tx.po_number || 'N/A'}`,
+            // Display Delivery Note / PO Number clearly
+            refNo: `DN: ${tx.delivery_note || 'N/A'} / PO: ${tx.po_number || 'N/A'}`,
             notes: tx.notes || '',
             createdAt: tx.created_at
         });
@@ -312,7 +319,7 @@ function renderTransactionTable(transactions) {
 
     transactions.forEach(tx => {
         const row = tableBody.insertRow();
-        row.insertCell().textContent = new Date(tx.createdAt).toLocaleString();
+        row.insertCell().textContent = new Date(tx.createdAt).toLocaleString(); // Format date nicely
         row.insertCell().textContent = tx.type;
         row.insertCell().textContent = tx.itemId;
         row.insertCell().textContent = tx.quantity;
@@ -457,29 +464,30 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
 });
 
-// Event listener for the logout buttons (mobile and desktop)
-document.getElementById('logoutBtn').addEventListener('click', async function() {
+// Event listener for the unified logout buttons (mobile and desktop)
+document.getElementById('logoutBtnUnified').addEventListener('click', async function() {
     await handleLogout();
 });
-document.getElementById('logoutBtnDesktop').addEventListener('click', async function() {
+document.getElementById('logoutBtnUnifiedDesktop').addEventListener('click', async function() {
     await handleLogout();
 });
 
 async function handleLogout() {
-    showLoading('logoutBtn'); // Show loading on both, if possible (or just the clicked one)
-    showLoading('logoutBtnDesktop');
+    // Show loading state on both logout buttons
+    showLoading('logoutBtnUnified');
+    showLoading('logoutBtnUnifiedDesktop');
 
     const { error } = await supabase.auth.signOut();
     if (error) {
         console.error('Logout error:', error.message);
-        // Using alert for persistent logout error, could be custom modal
-        alert(`Logout failed: ${error.message}`);
+        alert(`Logout failed: ${error.message}`); // Using alert here for simplicity, consider a custom modal in production
     } else {
         console.log('Logged out successfully');
         // The `onAuthStateChange` listener will handle showing the auth screen.
     }
-    hideLoading('logoutBtn', 'Logout');
-    hideLoading('logoutBtnDesktop', 'Logout');
+    // Hide loading state on both buttons
+    hideLoading('logoutBtnUnified', 'Logout');
+    hideLoading('logoutBtnUnifiedDesktop', 'Logout');
 }
 
 
