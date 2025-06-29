@@ -6,29 +6,31 @@
     <title>Online Inventory System (Supabase)</title>
     <!-- Link to custom CSS file -->
     <link rel="stylesheet" href="style.css">
-    <!-- Tailwind CSS CDN (Re-included for proper styling as discussed) -->
+    <!-- Tailwind CSS CDN (Re-included for proper styling) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Inline script to hide content immediately on load to prevent FOUC -->
+    <!-- This ensures appScreen is always hidden unless explicitly shown by JS -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initially hide both auth and app screens.
-            // JavaScript will then show the correct one after determining auth state.
             const authScreen = document.getElementById('authScreen');
             const appScreen = document.getElementById('appScreen');
-            if (authScreen) authScreen.classList.add('hidden');
+            // Ensure appScreen is hidden immediately before Supabase init runs
             if (appScreen) appScreen.classList.add('hidden');
+            // authScreen will be shown by initializeSupabase if no session exists
+            // if (authScreen) authScreen.classList.add('hidden'); // Redundant if appScreen is hidden by default
         });
     </script>
 </head>
 <body>
     <div class="container flex flex-col md:flex-row">
-        <!-- Application Title (always visible) -->
+        <!-- Application Title (always visible, but hidden on larger screens where sidebar title takes over) -->
         <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800 md:hidden w-full">Online Inventory System</h1>
 
-        <!-- Authentication Screen (will be shown/hidden by JS) -->
+        <!-- Authentication Screen (will be shown by JS initially if not logged in) -->
+        <!-- Starts visible, JS will hide if logged in -->
         <div id="authScreen" class="w-full">
             <h2 class="text-2xl font-bold text-gray-800 mb-5 text-center">Sign In to Inventory System</h2>
             <form id="loginForm" class="p-6 bg-white rounded-xl shadow-inner">
@@ -48,7 +50,7 @@
             </p>
         </div>
 
-        <!-- Main Application Screen (will be shown/hidden by JS) -->
+        <!-- Main Application Screen (hidden by default, shown by JS on successful login) -->
         <div id="appScreen" class="hidden w-full flex flex-col md:flex-row">
             <!-- Sidebar Navigation -->
             <div class="sidebar bg-gray-800 text-white p-4 rounded-xl shadow-lg md:w-1/4 lg:w-1/5 flex-shrink-0 mb-6 md:mb-0 md:mr-6">
