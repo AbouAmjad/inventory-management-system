@@ -4,21 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Inventory System (Supabase)</title>
-    <!-- Link to external CSS file -->
+    <!-- Link to custom CSS file -->
     <link rel="stylesheet" href="style.css">
+    <!-- Tailwind CSS CDN (Re-included for proper styling as discussed) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Inline script to hide app content immediately on load to prevent FOUC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initially hide both auth and app screens.
+            // JavaScript will then show the correct one after determining auth state.
+            const authScreen = document.getElementById('authScreen');
+            const appScreen = document.getElementById('appScreen');
+            if (authScreen) authScreen.classList.add('hidden');
+            if (appScreen) appScreen.classList.add('hidden');
+        });
+    </script>
 </head>
 <body>
     <div class="container">
         <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800">Online Inventory System</h1>
 
-        <!-- Authentication Screen (visible when not logged in) -->
+        <!-- Authentication Screen (will be shown/hidden by JS) -->
         <div id="authScreen" class="p-6 md:p-8">
-            <!-- Removed sign up tab button -->
             <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
                 <button class="tab-button active" onclick="showAuthTab(event, 'signInForm')">Sign In</button>
-                <!-- <button class="tab-button" onclick="showAuthTab(event, 'signUpForm')">Sign Up</button> Removed Sign Up button -->
             </div>
 
             <!-- Sign In Form -->
@@ -37,30 +49,9 @@
                     <div id="loginMessage" class="message-box hidden"></div>
                 </form>
             </div>
-
-            <!-- Removed Sign Up Form -->
-            <!-- <div id="signUpForm" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Sign Up</h2>
-                <form id="registerForm">
-                    <div class="form-group">
-                        <label for="registerEmail">Email</label>
-                        <input type="email" id="registerEmail" placeholder="your@example.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerPassword">Password</label>
-                        <input type="password" id="registerPassword" placeholder="••••••••" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="registerConfirmPassword">Confirm Password</label>
-                        <input type="password" id="registerConfirmPassword" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" id="registerBtn">Sign Up</button>
-                    <div id="registerMessage" class="message-box hidden"></div>
-                </form>
-            </div> -->
         </div>
 
-        <!-- Main Application Screen (visible when logged in) -->
+        <!-- Main Application Screen (will be shown/hidden by JS) -->
         <div id="appScreen" class="hidden">
             <div class="user-info-bar">
                 <span id="loggedInUserEmail" class="text-base font-semibold text-gray-700"></span>
@@ -192,8 +183,9 @@
         </div>
     </div>
 
-    <!-- Link to external JavaScript file -->
+    <!-- Supabase Client SDK (Re-included for functionality as discussed) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Link to external JavaScript file -->
     <script src="script.js"></script>
 </body>
 </html>
