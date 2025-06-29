@@ -15,9 +15,10 @@
 
         <!-- Authentication Screen (visible when not logged in) -->
         <div id="authScreen" class="p-6 md:p-8">
+            <!-- Removed sign up tab button -->
             <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
                 <button class="tab-button active" onclick="showAuthTab(event, 'signInForm')">Sign In</button>
-                <button class="tab-button" onclick="showAuthTab(event, 'signUpForm')">Sign Up</button>
+                <!-- <button class="tab-button" onclick="showAuthTab(event, 'signUpForm')">Sign Up</button> Removed Sign Up button -->
             </div>
 
             <!-- Sign In Form -->
@@ -37,8 +38,8 @@
                 </form>
             </div>
 
-            <!-- Sign Up Form -->
-            <div id="signUpForm" class="tab-content hidden">
+            <!-- Removed Sign Up Form -->
+            <!-- <div id="signUpForm" class="tab-content hidden">
                 <h2 class="text-2xl font-bold text-gray-800 mb-5">Sign Up</h2>
                 <form id="registerForm">
                     <div class="form-group">
@@ -56,7 +57,7 @@
                     <button type="submit" id="registerBtn">Sign Up</button>
                     <div id="registerMessage" class="message-box hidden"></div>
                 </form>
-            </div>
+            </div> -->
         </div>
 
         <!-- Main Application Screen (visible when logged in) -->
@@ -192,6 +193,7 @@
     </div>
 
     <!-- Link to external JavaScript file -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
