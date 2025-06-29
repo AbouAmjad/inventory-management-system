@@ -1,8 +1,5 @@
 /* style.css */
 
-/* Tailwind CSS is included via CDN in index.html,
-   so these are custom styles or overrides */
-
 /* Base styles applied to body and main container */
 body {
     font-family: 'Inter', sans-serif;
@@ -11,7 +8,7 @@ body {
     padding: 1rem; /* p-4 */
 }
 .container {
-    max-width: 56rem; /* max-w-4xl (approximately 768px) */
+    max-width: 80rem; /* Increased max-width for sidebar layout */
     margin-left: auto; /* mx-auto */
     margin-right: auto; /* mx-auto */
     background-color: #ffffff; /* bg-white */
@@ -19,43 +16,163 @@ body {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
     padding: 1.5rem; /* p-6 */
     margin-top: 2rem; /* mt-8 */
+    display: flex; /* flex for responsive layout */
+    flex-direction: column; /* default to column for mobile */
 }
 @media (min-width: 768px) { /* md: breakpoint */
     .container {
         padding: 2rem; /* md:p-8 */
+        flex-direction: row; /* row for desktop */
     }
 }
 
-/* Styles for tab buttons (shared by auth and app tabs) */
-.tab-button {
-    padding-left: 1.25rem; /* px-5 */
-    padding-right: 1.25rem; /* px-5 */
-    padding-top: 0.75rem; /* py-3 */
-    padding-bottom: 0.75rem; /* py-3 */
-    border-top-left-radius: 0.5rem; /* rounded-t-lg */
-    border-top-right-radius: 0.5rem; /* rounded-t-lg */
+/* Sidebar Specific Styles */
+.sidebar {
+    background-color: #1f2937; /* bg-gray-800 */
+    color: #ffffff; /* text-white */
+    padding: 1rem; /* p-4 */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+    margin-bottom: 1.5rem; /* mb-6 for mobile spacing */
+}
+@media (min-width: 768px) { /* md: breakpoint */
+    .sidebar {
+        margin-right: 1.5rem; /* md:mr-6 */
+        margin-bottom: 0; /* remove mobile margin */
+        display: flex; /* flex for internal layout */
+        flex-direction: column; /* stack items vertically */
+        justify-content: space-between; /* push logout to bottom */
+    }
+    .container > .main-content { /* Adjust padding for main content when sidebar is present */
+        padding: 2rem; /* Consistent padding with desktop container */
+    }
+    .main-content {
+        min-height: calc(100vh - 4rem - 4rem - 2rem); /* Approx viewport height - top/bottom container padding - top/bottom container margin */
+    }
+}
+
+/* Sidebar Button Styling */
+.sidebar-button {
+    display: block; /* Make buttons stack vertically */
+    width: 100%; /* Full width within sidebar */
+    padding: 0.75rem 1rem; /* py-3 px-4 */
+    margin-bottom: 0.5rem; /* mb-2 */
     font-size: 1rem; /* text-base */
     font-weight: 500; /* font-medium */
-    color: #4b5563; /* text-gray-600 */
-    border-bottom-width: 2px; /* border-b-2 */
-    border-bottom-color: transparent; /* border-transparent */
-    transition-property: color, border-color, background-color; /* transition-colors */
+    border-radius: 0.5rem; /* rounded-lg */
+    text-align: left; /* Align text to left */
+    background-color: transparent; /* Default transparent background */
+    color: #d1d5db; /* text-gray-300 */
+    transition-property: background-color, color; /* transition-colors */
     transition-duration: 200ms; /* duration-200 */
     outline: none; /* focus:outline-none */
 }
-.tab-button.active {
-    color: #1d4ed8; /* text-blue-700 */
-    border-bottom-color: #3b82f6; /* border-blue-500 */
-    background-color: #f9fafb; /* bg-gray-50 */
+.sidebar-button:hover {
+    background-color: #374151; /* bg-gray-700 */
+    color: #e5e7eb; /* text-gray-200 */
+}
+.sidebar-button.active {
+    background-color: #3b82f6; /* bg-blue-600 */
+    color: #ffffff; /* text-white */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+}
+.sidebar-button:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
 }
 
-/* Styles for tab content areas */
-.tab-content {
-    padding: 1.5rem; /* p-6 */
+/* User Info Bar in Sidebar (Mobile vs Desktop) */
+.user-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #374151; /* bg-gray-700 */
+    padding: 0.75rem; /* p-3 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+}
+/* Adjustments for desktop user info bar within sidebar */
+.user-info-bar.md\:hidden {
+    display: flex; /* Ensure it's flex on mobile */
+    margin-bottom: 1.5rem; /* mb-6 */
+}
+.user-info-bar.hidden.md\:flex { /* This targets the desktop-only user info bar */
+    display: none; /* Hidden by default */
+}
+@media (min-width: 768px) {
+    .user-info-bar.hidden.md\:flex {
+        display: flex; /* Show on desktop */
+    }
+    .user-info-bar.md\:hidden {
+        display: none; /* Hide on desktop */
+    }
+}
+#loggedInUserEmail, #loggedInUserEmailDesktop {
+    font-size: 1rem; /* text-base */
+    font-weight: 600; /* font-semibold */
+    color: #d1d5db; /* text-gray-200 */
+    white-space: nowrap; /* Prevent email wrap */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Show ellipsis for overflow */
+    max-width: 70%; /* Limit width to leave space for button */
+}
+
+/* General button styling (for forms and logout button inside user-info-bar) */
+button {
+    width: 100%; /* w-full */
+    display: inline-flex;
+    justify-content: center;
+    padding: 0.625rem 1rem; /* py-2.5 px-4 */
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    font-size: 1rem; /* text-base */
+    font-weight: 500; /* font-medium */
+    border-radius: 0.5rem; /* rounded-lg */
+    color: #ffffff; /* text-white */
+    background-color: #3b82f6; /* bg-blue-600 */ /* Changed to blue for consistency with app theme */
+    transition: background-color 200ms ease-in-out, transform 200ms ease-in-out; /* transition-colors transform */
+    transform: none; /* initial transform */
+    outline: none; /* focus:outline-none */
+}
+button:hover {
+    background-color: #2563eb; /* hover:bg-blue-700 */
+    transform: scale(1.02); /* Slight scale on hover */
+}
+button:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 6px rgba(59, 130, 246, 0.2); /* focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 */
+}
+button:disabled {
+    background-color: #9ca3af; /* bg-gray-400 */
+    cursor: not-allowed;
+    transform: none; /* transform-none */
+}
+/* Override for logout buttons in sidebar for smaller size */
+.user-info-bar button {
+    width: auto;
+    padding: 0.25rem 0.75rem; /* px-3 py-1 */
+    font-size: 0.875rem; /* text-sm */
+    border-radius: 0.375rem; /* rounded-lg */
+    background-color: #ef4444; /* bg-red-600 */
+}
+.user-info-bar button:hover {
+    background-color: #dc2626; /* hover:bg-red-700 */
+    transform: none; /* No scale for these smaller buttons */
+}
+
+
+/* Main content area */
+.main-content {
     background-color: #ffffff; /* bg-white */
-    border-bottom-left-radius: 0.5rem; /* rounded-b-xl */
-    border-bottom-right-radius: 0.5rem; /* rounded-b-xl */
-    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+    padding: 1.5rem; /* p-6 */
+    width: 100%; /* Default full width for mobile */
+}
+
+/* App Tab Content */
+.app-tab-content {
+    /* These styles apply to the content inside each tab (Add Item, Incoming, etc.) */
+    /* They are initially hidden by JS and shown based on active tab */
+    padding: 0; /* No extra padding here as main-content has padding */
 }
 
 /* Form group spacing */
@@ -81,12 +198,8 @@ textarea {
     margin-top: 0.25rem; /* mt-1 */
     display: block;
     width: 100%; /* w-full */
-    padding-left: 1rem; /* px-4 */
-    padding-right: 1rem; /* px-4 */
-    padding-top: 0.5rem; /* py-2 */
-    padding-bottom: 0.5rem; /* py-2 */
-    border-width: 1px; /* border */
-    border-color: #d1d5db; /* border-gray-300 */
+    padding: 0.5rem 1rem; /* py-2 px-4 */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
     border-radius: 0.5rem; /* rounded-lg */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
     outline: none; /* focus:outline-none */
@@ -97,45 +210,10 @@ input[type="password"]:focus,
 input[type="text"]:focus,
 input[type="number"]:focus,
 textarea:focus {
-    outline: 2px solid transparent; /* default outline reset */
-    outline-offset: 2px; /* default outline-offset */
+    outline: 2px solid transparent;
+    outline-offset: 2px;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* focus:ring-blue-500 */
     border-color: #3b82f6; /* focus:border-blue-500 */
-}
-
-/* Button styling */
-button {
-    width: 100%; /* w-full */
-    display: inline-flex;
-    justify-content: center;
-    padding-top: 0.625rem; /* py-2.5 */
-    padding-bottom: 0.625rem; /* py-2.5 */
-    padding-left: 1rem; /* px-4 */
-    padding-right: 1rem; /* px-4 */
-    border-width: 1px;
-    border-color: transparent;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
-    font-size: 1rem; /* text-base */
-    font-weight: 500; /* font-medium */
-    border-radius: 0.5rem; /* rounded-lg */
-    color: #ffffff; /* text-white */
-    background-color: #dc2626; /* bg-blue-600 */ /* This was red in previous, changed to red for consistency. Let me know if you prefer blue */
-    transition-property: background-color, transform; /* transition-colors transform */
-    transition-duration: 200ms; /* duration-200 */
-    transform: none; /* initial transform */
-    outline: none; /* focus:outline-none */
-}
-button:hover {
-    background-color: #b91c1c; /* hover:bg-red-700 */
-    transform: scale(1.05); /* hover:scale-105 */
-}
-button:focus {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 0 6px rgba(59, 130, 246, 0.2); /* focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 */
-}
-button:disabled {
-    background-color: #9ca3af; /* bg-gray-400 */
-    cursor: not-allowed;
-    transform: none; /* transform-none */
 }
 
 /* Message box styling (success/error) */
@@ -206,13 +284,14 @@ button:disabled {
     background-color: #dbeafe; /* bg-blue-100 */ /* For keyboard navigation */
 }
 
-/* Inventory Table specific styles */
+/* Table specific styles (for both Inventory and Transactions) */
 .inventory-table-container {
     margin-top: 2rem; /* mt-8 */
     background-color: #ffffff; /* bg-white */
     padding: 1.5rem; /* p-6 */
     border-radius: 0.75rem; /* rounded-xl */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+    overflow-x: auto; /* Allow horizontal scroll on small screens */
 }
 .inventory-table {
     min-width: 100%; /* min-w-full */
@@ -253,47 +332,13 @@ button:disabled {
     color: #6b7280; /* text-gray-500 */
 }
 
-/* User info bar for logged-in state */
-.user-info-bar {
+/* Responsive adjustments for the app screen layout */
+#appScreen {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #f9fafb; /* bg-gray-50 */
-    padding: 0.75rem; /* p-3 */
-    border-top-left-radius: 0.5rem; /* rounded-t-lg */
-    border-top-right-radius: 0.5rem; /* rounded-t-lg */
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
-    margin-bottom: 1rem; /* mb-4 */
+    flex-direction: column; /* Default column flow for mobile */
 }
-.user-info-bar button {
-    width: auto; /* w-auto */
-    padding-top: 0.5rem; /* py-2 */
-    padding-bottom: 0.5rem; /* py-2 */
-    padding-left: 1rem; /* px-4 */
-    padding-right: 1rem; /* px-4 */
-    font-size: 0.875rem; /* text-sm */
-    background-color: #ef4444; /* bg-red-600 */
+@media (min-width: 768px) {
+    #appScreen {
+        flex-direction: row; /* Row flow for desktop */
+    }
 }
-.user-info-bar button:hover {
-    background-color: #dc2626; /* hover:bg-red-700 */
-}
-#loggedInUserEmail {
-    font-size: 1rem; /* text-base */
-    font-weight: 600; /* font-semibold */
-    color: #374151; /* text-gray-700 */
-}
-
-/* Transitions for showing/hiding auth/app screens */
-/* While CSS transitions can be defined, the JS directly toggles 'hidden' class.
-   For actual smooth transitions, you'd combine JS class toggling with
-   CSS properties like max-height, opacity, and transform. */
-#authScreen, #appScreen {
-    /* If you want a fade effect, you could remove 'hidden' class and use opacity */
-    /* opacity: 0; */
-    /* pointer-events: none; */
-    /* transition: opacity 0.5s ease-in-out; */
-}
-/* #authScreen.active, #appScreen.active { */
-    /* opacity: 1; */
-    /* pointer-events: all; */
-/* } */
