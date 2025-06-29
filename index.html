@@ -11,18 +11,12 @@
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Inline script to hide content immediately on load to prevent FOUC -->
-    <!-- This ensures appScreen is always hidden unless explicitly shown by JS -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const authScreen = document.getElementById('authScreen');
-            const appScreen = document.getElementById('appScreen');
-            // Ensure appScreen is hidden immediately before Supabase init runs
-            if (appScreen) appScreen.classList.add('hidden');
-            // authScreen will be shown by initializeSupabase if no session exists
-            // if (authScreen) authScreen.classList.add('hidden'); // Redundant if appScreen is hidden by default
-        });
-    </script>
+    <!-- Inline style to hide app content IMMEDIATELY on load, preventing FOUC -->
+    <style>
+        #appScreen {
+            display: none !important; /* Ensure app content is hidden from the start */
+        }
+    </style>
 </head>
 <body>
     <div class="container flex flex-col md:flex-row">
@@ -30,7 +24,7 @@
         <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800 md:hidden w-full">Online Inventory System</h1>
 
         <!-- Authentication Screen (will be shown by JS initially if not logged in) -->
-        <!-- Starts visible, JS will hide if logged in -->
+        <!-- Starts visible by default, JS will hide if logged in -->
         <div id="authScreen" class="w-full">
             <h2 class="text-2xl font-bold text-gray-800 mb-5 text-center">Sign In to Inventory System</h2>
             <form id="loginForm" class="p-6 bg-white rounded-xl shadow-inner">
@@ -51,24 +45,29 @@
         </div>
 
         <!-- Main Application Screen (hidden by default, shown by JS on successful login) -->
-        <div id="appScreen" class="hidden w-full flex flex-col md:flex-row">
+        <div id="appScreen" class="w-full flex flex-col md:flex-row">
             <!-- Sidebar Navigation -->
-            <div class="sidebar bg-gray-800 text-white p-4 rounded-xl shadow-lg md:w-1/4 lg:w-1/5 flex-shrink-0 mb-6 md:mb-0 md:mr-6">
+            <div class="sidebar bg-gray-800 text-white p-4 rounded-xl shadow-lg md:w-1/4 lg:w-1/5 flex-shrink-0 mb-6 md:mb-0 md:mr-6 flex flex-col">
                 <h2 class="text-2xl font-bold mb-6 text-blue-300 hidden md:block">Inventory Menu</h2>
-                <div class="user-info-bar mb-6 md:hidden">
-                    <span id="loggedInUserEmail" class="text-base font-semibold text-gray-200"></span>
-                    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg">Logout</button>
+                
+                <!-- Unified Logout Button & User Info in Sidebar (responsive visibility) -->
+                <div class="user-info-bar flex justify-between items-center bg-gray-700 p-3 rounded-lg shadow-sm mb-6 md:hidden">
+                    <span id="loggedInUserEmailMobile" class="text-base font-semibold text-gray-200 truncate"></span>
+                    <button id="logoutBtnUnified" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg ml-2">Logout</button>
                 </div>
-                <nav>
+                
+                <nav class="flex-grow">
                     <button class="sidebar-button active" onclick="openAppTab(event, 'addItemTab')">Add New Item</button>
                     <button class="sidebar-button" onclick="openAppTab(event, 'incomingTab')">Record Incoming</button>
                     <button class="sidebar-button" onclick="openAppTab(event, 'outgoingTab')">Record Outgoing</button>
                     <button class="sidebar-button" onclick="openAppTab(event, 'viewInventoryTab')">View Inventory</button>
                     <button class="sidebar-button" onclick="openAppTab(event, 'transactionHistoryTab')">Transaction History</button>
                 </nav>
-                <div class="user-info-bar mt-auto pt-6 hidden md:flex">
-                    <span id="loggedInUserEmailDesktop" class="text-base font-semibold text-gray-200"></span>
-                    <button id="logoutBtnDesktop" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg">Logout</button>
+                
+                <!-- Unified Logout Button & User Info in Sidebar (desktop visibility) -->
+                <div class="user-info-bar flex justify-between items-center bg-gray-700 p-3 rounded-lg shadow-sm mt-auto pt-6 hidden md:flex">
+                    <span id="loggedInUserEmailDesktop" class="text-base font-semibold text-gray-200 truncate"></span>
+                    <button id="logoutBtnUnifiedDesktop" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg ml-2">Logout</button>
                 </div>
             </div>
 
