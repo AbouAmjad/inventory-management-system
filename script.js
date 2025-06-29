@@ -68,7 +68,7 @@ async function initializeSupabase() {
     }
 
     // Always ensure the Sign In tab is active initially on the auth screen.
-    // Removed direct click for signUpForm tab as it's removed
+    // Since Sign Up is removed, this ensures the login form is shown first.
     document.querySelector('#authScreen .tab-button').click();
 }
 
@@ -100,7 +100,7 @@ function showAppScreen() {
  */
 function setupRealtimeInventoryListener() {
     // Guard clause: ensure supabase client and userId are available
-    if (!supabase || !userId) {
+    if (!supabase || !userId) { // userId must be available for this
         console.warn("Supabase client or user ID not ready for inventory listener. Skipping listener setup.");
         return;
     }
@@ -129,7 +129,7 @@ function setupRealtimeInventoryListener() {
  */
 async function fetchInventoryAndRender() {
     // Guard clause: ensure supabase client and userId are available
-    if (!supabase || !userId) {
+    if (!supabase || !userId) { // userId must be available for this
         console.warn("Supabase client or user ID not ready to fetch inventory.");
         return;
     }
@@ -145,7 +145,7 @@ async function fetchInventoryAndRender() {
     if (error) {
         console.error('Error fetching inventory:', error.message);
         // Display an error message if fetching fails
-        document.getElementById('inventoryEmptyState').textContent = `Error loading inventory: ${error.message}`;
+        document.getElementById('inventoryEmptyState').textContent = `Error loading inventory: ${error.message}. Please ensure 'products' table exists and RLS is configured correctly.`;
         document.getElementById('inventoryEmptyState').classList.remove('hidden');
     } else {
         currentInventoryData = data; // Store the full fetched data for client-side filtering
@@ -305,40 +305,6 @@ function hideLoading(buttonId, originalText) {
 }
 
 // --- Authentication Forms Submission Handlers ---
-
-// Removed register form submission handler as signup is removed from HTML
-/*
-document.getElementById('registerForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    hideMessage('registerMessage');
-    showLoading('registerBtn');
-
-    const email = document.getElementById('registerEmail').value;
-    const password = document.getElementById('registerPassword').value;
-    const confirmPassword = document.getElementById('registerConfirmPassword').value;
-
-    if (password !== confirmPassword) {
-        showMessage('registerMessage', 'Passwords do not match.', false);
-        hideLoading('registerBtn', 'Sign Up');
-        return;
-    }
-
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    hideLoading('registerBtn', 'Sign Up');
-    if (error) {
-        console.error('Sign up error:', error.message);
-        showMessage('registerMessage', `Sign up error: ${error.message}`, false);
-    } else {
-        showMessage('registerMessage', 'Sign up successful! Please sign in.', true);
-        this.reset();
-        document.querySelector('#authScreen #signInForm').style.display = "block";
-        document.querySelector('#authScreen #signUpForm').style.display = "none";
-        document.querySelector('#authScreen .tab-button:nth-child(2)').classList.remove("active");
-        document.querySelector('#authScreen .tab-button:nth-child(1)').classList.add("active");
-    }
-});
-*/
 
 // Event listener for the login form submission
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
