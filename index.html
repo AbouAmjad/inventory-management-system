@@ -10,8 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Inline script to hide app content immediately on load to prevent FOUC -->
+
+    <!-- Inline script to hide content immediately on load to prevent FOUC -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initially hide both auth and app screens.
@@ -24,166 +24,203 @@
     </script>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800">Online Inventory System</h1>
+    <div class="container flex flex-col md:flex-row">
+        <!-- Application Title (always visible) -->
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800 md:hidden w-full">Online Inventory System</h1>
 
         <!-- Authentication Screen (will be shown/hidden by JS) -->
-        <div id="authScreen" class="p-6 md:p-8">
-            <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
-                <button class="tab-button active" onclick="showAuthTab(event, 'signInForm')">Sign In</button>
-            </div>
-
-            <!-- Sign In Form -->
-            <div id="signInForm" class="tab-content">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Sign In</h2>
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="loginEmail">Email</label>
-                        <input type="email" id="loginEmail" placeholder="your@example.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" id="loginBtn">Sign In</button>
-                    <div id="loginMessage" class="message-box hidden"></div>
-                </form>
-            </div>
+        <div id="authScreen" class="w-full">
+            <h2 class="text-2xl font-bold text-gray-800 mb-5 text-center">Sign In to Inventory System</h2>
+            <form id="loginForm" class="p-6 bg-white rounded-xl shadow-inner">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="your@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="loginBtn">Sign In</button>
+                <div id="loginMessage" class="message-box hidden"></div>
+            </form>
+            <p class="text-center text-sm text-gray-600 mt-4">
+                No account? Please contact your administrator to create one.
+            </p>
         </div>
 
         <!-- Main Application Screen (will be shown/hidden by JS) -->
-        <div id="appScreen" class="hidden">
-            <div class="user-info-bar">
-                <span id="loggedInUserEmail" class="text-base font-semibold text-gray-700"></span>
-                <button id="logoutBtn" class="text-sm">Logout</button>
-            </div>
-
-            <div class="flex border-b border-gray-200 mb-6 bg-gray-50 rounded-t-lg shadow-sm">
-                <button class="tab-button active" onclick="openAppTab(event, 'addItemTab')">Add New Item</button>
-                <button class="tab-button" onclick="openAppTab(event, 'incomingTab')">Record Incoming</button>
-                <button class="tab-button" onclick="openAppTab(event, 'outgoingTab')">Record Outgoing</button>
-                <button class="tab-button" onclick="openAppTab(event, 'viewInventoryTab')">View Inventory</button>
-            </div>
-
-            <!-- Add Item Tab -->
-            <div id="addItemTab" class="tab-content">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Add New Item</h2>
-                <form id="addItemForm">
-                    <div class="form-group">
-                        <label for="itemId">Item ID (Unique)*</label>
-                        <input type="text" id="itemId" name="item_id" placeholder="e.g., SKU-001" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="itemName">Item Name*</label>
-                        <input type="text" id="itemName" name="item_name" placeholder="e.g., Wireless Mouse" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="itemDescription">Description</label>
-                        <textarea id="itemDescription" name="description" rows="3" placeholder="e.g., Ergonomic wireless mouse with 2.4GHz connectivity"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="unitCost">Unit Cost*</label>
-                        <input type="number" id="unitCost" name="unit_cost" step="0.01" min="0" placeholder="e.g., 15.50" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="sellingPrice">Selling Price*</label>
-                        <input type="number" id="sellingPrice" name="selling_price" step="0.01" min="0" placeholder="e.g., 29.99" required>
-                    </div>
-                    <button type="submit" id="addItemBtn">Add Item</button>
-                    <div id="addItemMessage" class="message-box hidden"></div>
-                </form>
-            </div>
-
-            <!-- Record Incoming Tab -->
-            <div id="incomingTab" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Incoming Stock</h2>
-                <form id="incomingForm">
-                    <div class="form-group autocomplete-container">
-                        <label for="incomingItemId">Item ID*</label>
-                        <input type="text" id="incomingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'incomingAutocompleteList')" autocomplete="off">
-                        <div id="incomingAutocompleteList" class="autocomplete-list hidden"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="incomingQuantity">Quantity*</label>
-                        <input type="number" id="incomingQuantity" name="quantity" min="1" placeholder="e.g., 50" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="incomingSupplier">Supplier</label>
-                        <input type="text" id="incomingSupplier" name="supplier" placeholder="e.g., Tech Distributors Inc.">
-                    </div>
-                    <div class="form-group">
-                        <label for="incomingDeliveryNote">Delivery Note Number</label>
-                        <input type="text" id="incomingDeliveryNote" name="delivery_note" placeholder="e.g., DN-2025-001">
-                    </div>
-                    <div class="form-group">
-                        <label for="incomingPoNumber">Purchase Order (PO) Number</label>
-                        <input type="text" id="incomingPoNumber" name="po_number" placeholder="e.g., PO-ABC-456">
-                    </div>
-                    <div class="form-group">
-                        <label for="incomingNotes">Notes</label>
-                        <textarea id="incomingNotes" name="notes" rows="3" placeholder="e.g., First batch of 2025"></textarea>
-                    </div>
-                    <button type="submit" id="incomingBtn">Record Incoming</button>
-                    <div id="incomingMessage" class="message-box hidden"></div>
-                </form>
-            </div>
-
-            <!-- Record Outgoing Tab -->
-            <div id="outgoingTab" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Outgoing Stock</h2>
-                <form id="outgoingForm">
-                    <div class="form-group autocomplete-container">
-                        <label for="outgoingItemId">Item ID*</label>
-                        <input type="text" id="outgoingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'outgoingAutocompleteList')" autocomplete="off">
-                        <div id="outgoingAutocompleteList" class="autocomplete-list hidden"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="outgoingQuantity">Quantity*</label>
-                        <input type="number" id="outgoingQuantity" name="quantity" min="1" placeholder="e.g., 10" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="outgoingCustomer">Customer</label>
-                        <input type="text" id="outgoingCustomer" name="customer" placeholder="e.g., John Doe / ABC Corp.">
-                    </div>
-                    <div class="form-group">
-                        <label for="outgoingNotes">Notes</label>
-                        <textarea id="outgoingNotes" name="notes" rows="3" placeholder="e.g., Sold via online store"></textarea>
-                    </div>
-                    <button type="submit" id="outgoingBtn">Record Outgoing</button>
-                    <div id="outgoingMessage" class="message-box hidden"></div>
-                </form>
-            </div>
-
-            <!-- View Inventory Tab -->
-            <div id="viewInventoryTab" class="tab-content hidden">
-                <h2 class="text-2xl font-bold text-gray-800 mb-5">Current Inventory</h2>
-                <div class="form-group">
-                    <label for="inventorySearch">Search Item (ID or Name)</label>
-                    <input type="text" id="inventorySearch" placeholder="Search by Item ID or Item Name..." onkeyup="filterInventoryTable()">
+        <div id="appScreen" class="hidden w-full flex flex-col md:flex-row">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar bg-gray-800 text-white p-4 rounded-xl shadow-lg md:w-1/4 lg:w-1/5 flex-shrink-0 mb-6 md:mb-0 md:mr-6">
+                <h2 class="text-2xl font-bold mb-6 text-blue-300 hidden md:block">Inventory Menu</h2>
+                <div class="user-info-bar mb-6 md:hidden">
+                    <span id="loggedInUserEmail" class="text-base font-semibold text-gray-200"></span>
+                    <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg">Logout</button>
                 </div>
-                <div class="inventory-table-container">
-                    <table class="inventory-table">
-                        <thead>
-                            <tr>
-                                <th>Item ID</th>
-                                <th>Item Name</th>
-                                <th>Description</th>
-                                <th>Unit Cost</th>
-                                <th>Selling Price</th>
-                                <th>Current Stock</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTableBody">
-                            <!-- Inventory items will be rendered here by JavaScript -->
-                        </tbody>
-                    </table>
-                    <p id="inventoryEmptyState" class="inventory-table-empty">No items in inventory. Add a new item to get started!</p>
+                <nav>
+                    <button class="sidebar-button active" onclick="openAppTab(event, 'addItemTab')">Add New Item</button>
+                    <button class="sidebar-button" onclick="openAppTab(event, 'incomingTab')">Record Incoming</button>
+                    <button class="sidebar-button" onclick="openAppTab(event, 'outgoingTab')">Record Outgoing</button>
+                    <button class="sidebar-button" onclick="openAppTab(event, 'viewInventoryTab')">View Inventory</button>
+                    <button class="sidebar-button" onclick="openAppTab(event, 'transactionHistoryTab')">Transaction History</button>
+                </nav>
+                <div class="user-info-bar mt-auto pt-6 hidden md:flex">
+                    <span id="loggedInUserEmailDesktop" class="text-base font-semibold text-gray-200"></span>
+                    <button id="logoutBtnDesktop" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg">Logout</button>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content flex-grow bg-white p-6 rounded-xl shadow-lg">
+                <!-- Add Item Tab -->
+                <div id="addItemTab" class="app-tab-content">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Add New Item</h2>
+                    <form id="addItemForm">
+                        <div class="form-group">
+                            <label for="itemId">Item ID (Unique)*</label>
+                            <input type="text" id="itemId" name="item_id" placeholder="e.g., SKU-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemName">Item Name*</label>
+                            <input type="text" id="itemName" name="item_name" placeholder="e.g., Wireless Mouse" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemDescription">Description</label>
+                            <textarea id="itemDescription" name="description" rows="3" placeholder="e.g., Ergonomic wireless mouse with 2.4GHz connectivity"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="unitCost">Unit Cost*</label>
+                            <input type="number" id="unitCost" name="unit_cost" step="0.01" min="0" placeholder="e.g., 15.50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sellingPrice">Selling Price*</label>
+                            <input type="number" id="sellingPrice" name="selling_price" step="0.01" min="0" placeholder="e.g., 29.99" required>
+                        </div>
+                        <button type="submit" id="addItemBtn">Add Item</button>
+                        <div id="addItemMessage" class="message-box hidden"></div>
+                    </form>
+                </div>
+
+                <!-- Record Incoming Tab -->
+                <div id="incomingTab" class="app-tab-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Incoming Stock</h2>
+                    <form id="incomingForm">
+                        <div class="form-group autocomplete-container">
+                            <label for="incomingItemId">Item ID*</label>
+                            <input type="text" id="incomingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'incomingAutocompleteList')" autocomplete="off">
+                            <div id="incomingAutocompleteList" class="autocomplete-list hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="incomingQuantity">Quantity*</label>
+                            <input type="number" id="incomingQuantity" name="quantity" min="1" placeholder="e.g., 50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incomingSupplier">Supplier</label>
+                            <input type="text" id="incomingSupplier" name="supplier" placeholder="e.g., Tech Distributors Inc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="incomingDeliveryNote">Delivery Note Number</label>
+                            <input type="text" id="incomingDeliveryNote" name="delivery_note" placeholder="e.g., DN-2025-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="incomingPoNumber">Purchase Order (PO) Number</label>
+                            <input type="text" id="incomingPoNumber" name="po_number" placeholder="e.g., PO-ABC-456">
+                        </div>
+                        <div class="form-group">
+                            <label for="incomingNotes">Notes</label>
+                            <textarea id="incomingNotes" name="notes" rows="3" placeholder="e.g., First batch of 2025"></textarea>
+                        </div>
+                        <button type="submit" id="incomingBtn">Record Incoming</button>
+                        <div id="incomingMessage" class="message-box hidden"></div>
+                    </form>
+                </div>
+
+                <!-- Record Outgoing Tab -->
+                <div id="outgoingTab" class="app-tab-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Outgoing Stock</h2>
+                    <form id="outgoingForm">
+                        <div class="form-group autocomplete-container">
+                            <label for="outgoingItemId">Item ID*</label>
+                            <input type="text" id="outgoingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'outgoingAutocompleteList')" autocomplete="off">
+                            <div id="outgoingAutocompleteList" class="autocomplete-list hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="outgoingQuantity">Quantity*</label>
+                            <input type="number" id="outgoingQuantity" name="quantity" min="1" placeholder="e.g., 10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="outgoingCustomer">Customer</label>
+                            <input type="text" id="outgoingCustomer" name="customer" placeholder="e.g., John Doe / ABC Corp.">
+                        </div>
+                        <div class="form-group">
+                            <label for="outgoingNotes">Notes</label>
+                            <textarea id="outgoingNotes" name="notes" rows="3" placeholder="e.g., Sold via online store"></textarea>
+                        </div>
+                        <button type="submit" id="outgoingBtn">Record Outgoing</button>
+                        <div id="outgoingMessage" class="message-box hidden"></div>
+                    </form>
+                </div>
+
+                <!-- View Inventory Tab -->
+                <div id="viewInventoryTab" class="app-tab-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Current Inventory</h2>
+                    <div class="form-group">
+                        <label for="inventorySearch">Search Item (ID or Name)</label>
+                        <input type="text" id="inventorySearch" placeholder="Search by Item ID or Item Name..." onkeyup="filterInventoryTable()">
+                    </div>
+                    <div class="inventory-table-container">
+                        <table class="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Item ID</th>
+                                    <th>Item Name</th>
+                                    <th>Description</th>
+                                    <th>Unit Cost</th>
+                                    <th>Selling Price</th>
+                                    <th>Current Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                <!-- Inventory items will be rendered here by JavaScript -->
+                            </tbody>
+                        </table>
+                        <p id="inventoryEmptyState" class="inventory-table-empty">No items in inventory. Add a new item to get started!</p>
+                    </div>
+                </div>
+
+                <!-- Transaction History Tab -->
+                <div id="transactionHistoryTab" class="app-tab-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Transaction History</h2>
+                    <p class="text-sm text-gray-600 mb-4">Displays both incoming and outgoing transactions.</p>
+                    <div class="form-group">
+                        <label for="transactionSearch">Search Transactions</label>
+                        <input type="text" id="transactionSearch" placeholder="Search by Item ID, Supplier, Customer, Notes..." onkeyup="filterTransactionTable()">
+                    </div>
+                    <div class="inventory-table-container">
+                        <table class="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Item ID</th>
+                                    <th>Quantity</th>
+                                    <th>Contact</th>
+                                    <th>Ref. No. (DN/PO)</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody">
+                                <!-- Transaction history will be rendered here by JavaScript -->
+                            </tbody>
+                        </table>
+                        <p id="transactionEmptyState" class="inventory-table-empty">No transactions found.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Supabase Client SDK (Re-included for functionality as discussed) -->
+    <!-- Supabase Client SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Link to external JavaScript file -->
     <script src="script.js"></script>
