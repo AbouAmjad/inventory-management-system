@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "https://deno.land/x/supafunc@v1.0.0/mod.ts": "https://deno.land/x/supafunc@v1.0.0/mod.ts"
+  }
+}
