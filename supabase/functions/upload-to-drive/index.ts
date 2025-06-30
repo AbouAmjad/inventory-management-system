@@ -19,7 +19,7 @@ let auth: google.auth.GoogleAuth | null = null;
 try {
     // Parse the service account key JSON string
     const serviceAccountInfo = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY!);
-    
+
     auth = new google.auth.GoogleAuth({
         credentials: {
             client_email: serviceAccountInfo.client_email,
@@ -113,4 +113,28 @@ serve(async (req) => {
             message: 'File uploaded successfully',
             fileId: res.data.id,
             fileName: res.data.name,
-            webViewLink: res.data.webViewLink, // URL
+            webViewLink: res.data.webViewLink, // URL to view the file in browser
+            webContentLink: res.data.webContentLink // URL to download the file
+        }), {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*', // IMPORTANT for CORS - adjust for production
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+        });
+
+    } catch (error) {
+        console.error('Error processing request:', error);
+        return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
+            status: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*', // IMPORTANT for CORS - adjust for production
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+        });
+    }
+});
