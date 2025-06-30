@@ -5,8 +5,9 @@ const SUPABASE_URL = 'https://vjhikffducpurixlkfjd.supabase.co'; // e.g., https:
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y'; // from Supabase project settings -> API -> Project API Keys -> anon (public)
 
 // Ensure Supabase URL and Key are provided
-if (!SUPABASE_URL || SUPABASE_URL === 'https://vjhikffducpurixlkfjd.supabase.co' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y') {
-    alert("CRITICAL ERROR: Please update script.js with your actual SUPABASE_URL and SUPABASE_ANON_KEY.");
+// Ensure Supabase URL and Key are provided (this check is mainly for if they were left as placeholders or accidentally cleared)
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    alert("CRITICAL ERROR: Supabase URL or Anon Key is missing. Please check your script.js file.");
     console.error("Supabase URL or Key not set. Please update script.js.");
 }
 
