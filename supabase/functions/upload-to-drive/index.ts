@@ -6,7 +6,6 @@ import * as streamifier from 'https://deno.land/x/streamifier@v0.0.4/mod.ts';
 const GOOGLE_SERVICE_ACCOUNT_KEY = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
 const GOOGLE_DRIVE_FOLDER_ID = Deno.env.get('GOOGLE_DRIVE_FOLDER_ID');
 
-
 if (!GOOGLE_SERVICE_ACCOUNT_KEY) {
     console.error('GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set.');
     // In a real function, you might want to throw an error or return a 500 response
