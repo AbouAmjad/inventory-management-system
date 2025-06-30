@@ -1,11 +1,11 @@
 // script.js
 
 // IMPORTANT: Replace with your actual Supabase project URL and Anon Key
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // e.g., https://abcde12345.supabase.co
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // from Supabase project settings -> API -> Project API Keys -> anon (public)
+const SUPABASE_URL = 'https://vjhikffducpurixlkfjd.supabase.co'; // e.g., https://abcde12345.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y'; // from Supabase project settings -> API -> Project API Keys -> anon (public)
 
 // Ensure Supabase URL and Key are provided
-if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+if (!SUPABASE_URL || SUPABASE_URL === 'https://vjhikffducpurixlkfjd.supabase.co' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqaGlrZmZkdWNwdXJpeGxrZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzIxNTcsImV4cCI6MjA2Njc0ODE1N30.lLlq3LYmHqpG7c5WOgfNFscRLjPDKkWnTkllw_X4Q_Y') {
     alert("CRITICAL ERROR: Please update script.js with your actual SUPABASE_URL and SUPABASE_ANON_KEY.");
     console.error("Supabase URL or Key not set. Please update script.js.");
 }
