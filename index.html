@@ -3,227 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Inventory System (Supabase)</title>
-    <!-- Link to custom CSS file -->
+    <title>Inventory Management - File Upload</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Inline style to hide app content IMMEDIATELY on load, preventing FOUC -->
-    <style>
-        #appScreen {
-            display: none !important; /* Ensure app content is hidden from the start */
-        }
-    </style>
 </head>
 <body>
-    <div class="container flex flex-col md:flex-row">
-        <!-- Application Title (always visible, but hidden on larger screens where sidebar title takes over) -->
-        <h1 class="text-3xl font-extrabold text-center mb-6 text-blue-800 md:hidden w-full">Online Inventory System</h1>
+    <div id="app" style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #333; text-align: center;">Add New Item & Upload Documents</h1>
 
-        <!-- Authentication Screen (will be shown by JS initially if not logged in) -->
-        <!-- Starts visible by default, JS will hide if logged in -->
-        <div id="authScreen" class="w-full">
-            <h2 class="text-2xl font-bold text-gray-800 mb-5 text-center">Sign In to Inventory System</h2>
-            <form id="loginForm" class="p-6 bg-white rounded-xl shadow-inner">
-                <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" placeholder="your@example.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required>
-                </div>
-                <button type="submit" id="loginBtn">Sign In</button>
-                <div id="loginMessage" class="message-box hidden"></div>
-            </form>
-            <p class="text-center text-sm text-gray-600 mt-4">
-                No account? Please contact your administrator to create one.
-            </p>
-        </div>
-
-        <!-- Main Application Screen (hidden by default, shown by JS on successful login) -->
-        <div id="appScreen" class="w-full flex flex-col md:flex-row">
-            <!-- Sidebar Navigation -->
-            <div class="sidebar bg-gray-800 text-white p-4 rounded-xl shadow-lg md:w-1/4 lg:w-1/5 flex-shrink-0 mb-6 md:mb-0 md:mr-6 flex flex-col">
-                <h2 class="text-2xl font-bold mb-6 text-blue-300 hidden md:block">Inventory Menu</h2>
-                
-                <!-- Unified Logout Button & User Info in Sidebar (mobile visibility) -->
-                <div class="user-info-bar flex justify-between items-center bg-gray-700 p-3 rounded-lg shadow-sm mb-6 md:hidden">
-                    <span id="loggedInUserEmailMobile" class="text-base font-semibold text-gray-200 truncate"></span>
-                    <button id="logoutBtnUnified" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg ml-2">Logout</button>
-                </div>
-                
-                <nav class="flex-grow">
-                    <button class="sidebar-button active" onclick="openAppTab(event, 'addItemTab')">Add New Item</button>
-                    <button class="sidebar-button" onclick="openAppTab(event, 'incomingTab')">Record Incoming</button>
-                    <button class="sidebar-button" onclick="openAppTab(event, 'outgoingTab')">Record Outgoing</button>
-                    <button class="sidebar-button" onclick="openAppTab(event, 'viewInventoryTab')">View Inventory</button>
-                    <button class="sidebar-button" onclick="openAppTab(event, 'transactionHistoryTab')">Transaction History</button>
-                </nav>
-                
-                <!-- Unified Logout Button & User Info in Sidebar (desktop visibility) -->
-                <div class="user-info-bar flex justify-between items-center bg-gray-700 p-3 rounded-lg shadow-sm mt-auto pt-6 hidden md:flex">
-                    <span id="loggedInUserEmailDesktop" class="text-base font-semibold text-gray-200 truncate"></span>
-                    <button id="logoutBtnUnifiedDesktop" class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded-lg ml-2">Logout</button>
-                </div>
+        <form id="itemForm" style="margin-top: 30px;">
+            <div style="margin-bottom: 15px;">
+                <label for="itemName" style="display: block; margin-bottom: 5px; font-weight: bold;">Item Name:</label>
+                <input type="text" id="itemName" required
+                       style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
             </div>
 
-            <!-- Main Content Area -->
-            <div class="main-content flex-grow bg-white p-6 rounded-xl shadow-lg">
-                <!-- Add Item Tab -->
-                <div id="addItemTab" class="app-tab-content">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Add New Item</h2>
-                    <form id="addItemForm">
-                        <div class="form-group">
-                            <label for="itemId">Item ID (Unique)*</label>
-                            <input type="text" id="itemId" name="item_id" placeholder="e.g., SKU-001" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="itemName">Item Name*</label>
-                            <input type="text" id="itemName" name="item_name" placeholder="e.g., Wireless Mouse" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="itemDescription">Description</label>
-                            <textarea id="itemDescription" name="description" rows="3" placeholder="e.g., Ergonomic wireless mouse with 2.4GHz connectivity"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="unitCost">Unit Cost*</label>
-                            <input type="number" id="unitCost" name="unit_cost" step="0.01" min="0" placeholder="e.g., 15.50" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="sellingPrice">Selling Price*</label>
-                            <input type="number" id="sellingPrice" name="selling_price" step="0.01" min="0" placeholder="e.g., 29.99" required>
-                        </div>
-                        <button type="submit" id="addItemBtn">Add Item</button>
-                        <div id="addItemMessage" class="message-box hidden"></div>
-                    </form>
-                </div>
-
-                <!-- Record Incoming Tab -->
-                <div id="incomingTab" class="app-tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Incoming Stock</h2>
-                    <form id="incomingForm">
-                        <div class="form-group autocomplete-container">
-                            <label for="incomingItemId">Item ID*</label>
-                            <input type="text" id="incomingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'incomingAutocompleteList')" autocomplete="off">
-                            <div id="incomingAutocompleteList" class="autocomplete-list hidden"></div>
-                        </div>
-                        <div class="form-group">
-                            <label for="incomingQuantity">Quantity*</label>
-                            <input type="number" id="incomingQuantity" name="quantity" min="1" placeholder="e.g., 50" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="incomingSupplier">Supplier</label>
-                            <input type="text" id="incomingSupplier" name="supplier" placeholder="e.g., Tech Distributors Inc.">
-                        </div>
-                        <div class="form-group">
-                            <label for="incomingDeliveryNote">Delivery Note Number</label>
-                            <input type="text" id="incomingDeliveryNote" name="delivery_note" placeholder="e.g., DN-2025-001">
-                        </div>
-                        <div class="form-group">
-                            <label for="incomingPoNumber">Purchase Order (PO) Number</label>
-                            <input type="text" id="incomingPoNumber" name="po_number" placeholder="e.g., PO-ABC-456">
-                        </div>
-                        <div class="form-group">
-                            <label for="incomingNotes">Notes</label>
-                            <textarea id="incomingNotes" name="notes" rows="3" placeholder="e.g., First batch of 2025"></textarea>
-                        </div>
-                        <button type="submit" id="incomingBtn">Record Incoming</button>
-                        <div id="incomingMessage" class="message-box hidden"></div>
-                    </form>
-                </div>
-
-                <!-- Record Outgoing Tab -->
-                <div id="outgoingTab" class="app-tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Record Outgoing Stock</h2>
-                    <form id="outgoingForm">
-                        <div class="form-group autocomplete-container">
-                            <label for="outgoingItemId">Item ID*</label>
-                            <input type="text" id="outgoingItemId" name="item_id" placeholder="Start typing item ID..." required onkeyup="filterItems(this, 'outgoingAutocompleteList')" autocomplete="off">
-                            <div id="outgoingAutocompleteList" class="autocomplete-list hidden"></div>
-                        </div>
-                        <div class="form-group">
-                            <label for="outgoingQuantity">Quantity*</label>
-                            <input type="number" id="outgoingQuantity" name="quantity" min="1" placeholder="e.g., 10" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="outgoingCustomer">Customer</label>
-                            <input type="text" id="outgoingCustomer" name="customer" placeholder="e.g., John Doe / ABC Corp.">
-                        </div>
-                        <div class="form-group">
-                            <label for="outgoingNotes">Notes</label>
-                            <textarea id="outgoingNotes" name="notes" rows="3" placeholder="e.g., Sold via online store"></textarea>
-                        </div>
-                        <button type="submit" id="outgoingBtn">Record Outgoing</button>
-                        <div id="outgoingMessage" class="message-box hidden"></div>
-                    </form>
-                </div>
-
-                <!-- View Inventory Tab -->
-                <div id="viewInventoryTab" class="app-tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Current Inventory</h2>
-                    <div class="form-group">
-                        <label for="inventorySearch">Search Item (ID or Name)</label>
-                        <input type="text" id="inventorySearch" placeholder="Search by Item ID or Item Name..." onkeyup="filterInventoryTable()">
-                    </div>
-                    <div class="inventory-table-container">
-                        <table class="inventory-table">
-                            <thead>
-                                <tr>
-                                    <th>Item ID</th>
-                                    <th>Item Name</th>
-                                    <th>Description</th>
-                                    <th>Unit Cost</th>
-                                    <th>Selling Price</th>
-                                    <th>Current Stock</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inventoryTableBody">
-                                <!-- Inventory items will be rendered here by JavaScript -->
-                            </tbody>
-                        </table>
-                        <p id="inventoryEmptyState" class="inventory-table-empty">No items in inventory. Add a new item to get started!</p>
-                    </div>
-                </div>
-
-                <!-- Transaction History Tab -->
-                <div id="transactionHistoryTab" class="app-tab-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-5">Transaction History</h2>
-                    <p class="text-sm text-gray-600 mb-4">Displays both incoming and outgoing transactions.</p>
-                    <div class="form-group">
-                        <label for="transactionSearch">Search Transactions</label>
-                        <input type="text" id="transactionSearch" placeholder="Search by Item ID, Supplier, Customer, Notes..." onkeyup="filterTransactionTable()">
-                    </div>
-                    <div class="inventory-table-container">
-                        <table class="inventory-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Item ID</th>
-                                    <th>Quantity</th>
-                                    <th>Contact</th>
-                                    <th>Ref. No. (DN/PO)</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactionTableBody">
-                                <!-- Transaction history will be rendered here by JavaScript -->
-                            </tbody>
-                        </table>
-                        <p id="transactionEmptyState" class="inventory-table-empty">No transactions found.</p>
-                    </div>
-                </div>
+            <div style="margin-bottom: 15px;">
+                <label for="itemImage" style="display: block; margin-bottom: 5px; font-weight: bold;">Item Image (PNG/JPG):</label>
+                <input type="file" id="itemImage" accept="image/png, image/jpeg, image/jpg"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
             </div>
+
+            <h2 style="color: #555; border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">Upload Receipt Documents</h2>
+
+            <div style="margin-bottom: 15px;">
+                <label for="dnPdf" style="display: block; margin-bottom: 5px; font-weight: bold;">Delivery Note (PDF):</label>
+                <input type="file" id="dnPdf" accept="application/pdf"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label for="invoicePdf" style="display: block; margin-bottom: 5px; font-weight: bold;">Invoice (PDF):</label>
+                <input type="file" id="invoicePdf" accept="application/pdf"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+            </div>
+
+            <button type="submit"
+                    style="width: 100%; padding: 12px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: background-color 0.3s ease;">
+                Add Item & Upload Documents
+            </button>
+        </form>
+
+        <p id="message" style="margin-top: 20px; text-align: center; color: #007bff; font-weight: bold;"></p>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <img id="uploadedImagePreview" src="" alt="Image Preview" style="max-width: 200px; height: auto; margin-top: 10px; border: 1px solid #eee; display: none;">
+            <p><a id="uploadedPdfLink" href="#" target="_blank" style="display: none; color: #007bff; text-decoration: none; font-weight: bold; margin-top: 10px;">View Uploaded PDF</a></p>
         </div>
     </div>
 
-    <!-- Supabase Client SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Link to external JavaScript file -->
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
