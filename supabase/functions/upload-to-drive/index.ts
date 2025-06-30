@@ -19,7 +19,7 @@ let auth: google.auth.GoogleAuth | null = null;
 try {
     // Parse the service account key JSON string
     const serviceAccountInfo = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY!);
-
+    
     auth = new google.auth.GoogleAuth({
         credentials: {
             client_email: serviceAccountInfo.client_email,
