@@ -1,5 +1,7 @@
 {
   "imports": {
-    "https://deno.land/x/supafunc@v1.0.0/mod.ts": "https://deno.land/x/supafunc@v1.0.0/mod.ts"
+    "https://deno.land/std@0.177.0/http/server.ts": "https://deno.land/std@0.177.0/http/server.ts",
+    "https://deno.land/x/googleapis@v0.11.0/mod.ts": "https://deno.land/x/googleapis@v0.11.0/mod.ts",
+    "https://deno.land/x/streamifier@v0.0.4/mod.ts": "https://deno.land/x/streamifier@v0.0.4/mod.ts"
   }
 }
