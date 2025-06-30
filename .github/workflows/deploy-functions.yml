@@ -21,20 +21,22 @@ jobs:
           node-version: '18' # Use a Node.js version compatible with Supabase CLI
 
       - name: Install Supabase CLI
-        run: npm install -g supabase@latest # Installs Supabase CLI globally
+        # CORRECTED: Install locally in the 'supabase' directory
+        run: npm install supabase@latest
+        working-directory: ./supabase # Install it where it will be used
 
       - name: Link Supabase Project
-        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} # CORRECTED LINE: reference the secret
-        working-directory: ./supabase # Run this command from the 'supabase' directory
-        env: # Add this env block for the link step
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }} # Needed for authentication during linking
+        # CORRECTED: Use npx to run the locally installed CLI
+        run: npx supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        working-directory: ./supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Deploy upload-to-drive function
-        run: supabase functions deploy upload-to-drive --no-verify-jwt # Deploy the function
-        working-directory: ./supabase # Run this command from the 'supabase' directory
+        # CORRECTED: Use npx to run the locally installed CLI
+        run: npx supabase functions deploy upload-to-drive --no-verify-jwt
+        working-directory: ./supabase
         env:
-          # Set Google secrets directly from GitHub Actions secrets
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          # Supabase CLI needs the access token for deployment
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
