@@ -22,18 +22,25 @@ jobs:
 
       - name: Install Supabase CLI (Specific Version)
         # Install a specific, newer version of Supabase CLI that supports 'pull'
-        run: npm install supabase@1.77.0 # Explicitly set a version that supports 'pull'
-        working-directory: ./supabase # Install it where it will be used
+        run: npm install supabase@1.77.0 # This version should work
+        working-directory: ./supabase # Install it into the 'supabase' directory
+
+      - name: Initialize Supabase Project
+        # This creates the supabase/config.toml and other boilerplate if it doesn't exist.
+        # It's crucial to run this FIRST if config.toml is missing.
+        run: npx supabase init
+        working-directory: ./supabase # Run init inside the 'supabase' directory
 
       - name: Link Supabase Project
-        # Use the locally installed CLI
+        # This updates the newly created/existing supabase/config.toml with the project ref
         run: npx supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         working-directory: ./supabase # Link command runs from 'supabase' directory
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Pull Supabase Configuration (Now should work)
-        # Pulls remote config into local files, helping with consistency warnings
+      - name: Pull Supabase Configuration
+        # Pulls remote config into local files, helping with consistency warnings and function sync.
+        # This step should now work since 'init' created config.toml.
         run: npx supabase pull
         working-directory: ./supabase # Pull command runs from 'supabase' directory
         env:
@@ -42,8 +49,9 @@ jobs:
       - name: Deploy upload-to-drive function
         # Now explicitly tell it the config file location
         run: npx supabase functions deploy upload-to-drive --no-verify-jwt --config ./supabase/config.toml
-        # Ensure 'working-directory: ./supabase' is NOT present here
+        # Ensure 'working-directory: ./supabase' is NOT present here for the deploy command itself,
+        # as the path is relative to the repo root.
         env:
-          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }} # CONFIRM THIS SECRET NAME AGAIN
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }} # Confirmed this matches your index.ts
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
