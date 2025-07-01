@@ -46,8 +46,8 @@ jobs:
       #     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Deploy upload-to-drive function
-        # This is the main goal: deploy the function.
-        run: ./supabase/node_modules/.bin/supabase functions deploy upload-to-drive --no-verify-jwt --config ./supabase/config.toml
+        # Using --workdir to specify the supabase project directory
+        run: ./supabase/node_modules/.bin/supabase --workdir ./supabase functions deploy upload-to-drive --no-verify-jwt
         working-directory: ./ # Run from repo root
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
