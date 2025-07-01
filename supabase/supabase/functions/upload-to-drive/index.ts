@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts"; // Keep th
 import { create as createJwt, decode as decodeJwt } from "https://deno.land/x/djwt@v2.8/mod.ts"; // NEW: For JWT creation
 import { Jose, Payload } from "https://deno.land/x/djwt@v2.8/mod.ts"; // NEW: For JWT types
 
+
 // Retrieve environment variables
 const GOOGLE_SERVICE_ACCOUNT_KEY_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
 const GOOGLE_DRIVE_FOLDER_ID = Deno.env.get("GOOGLE_DRIVE_FOLDER_ID");
