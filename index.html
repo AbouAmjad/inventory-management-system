@@ -4,53 +4,225 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management - File Upload</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Tailwind CSS CDN for basic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for 'Inter' -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        /* Custom styles for file input button to ensure consistent styling across browsers */
+        input[type="file"]::-webkit-file-upload-button {
+            @apply mr-4 py-2 px-4 rounded-full border-0 text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100;
+        }
+        input[type="file"]::file-selector-button {
+            @apply mr-4 py-2 px-4 rounded-full border-0 text-sm font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100;
+        }
+    </style>
 </head>
-<body>
-    <div id="app" style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);">
-        <h1 style="color: #333; text-align: center;">Add New Item & Upload Documents</h1>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="app" class="font-sans max-w-2xl mx-auto my-8 p-6 border border-gray-300 rounded-lg shadow-lg bg-white">
+        <h1 class="text-3xl text-gray-800 text-center mb-6 font-bold">Add New Item & Upload Documents</h1>
 
-        <form id="itemForm" style="margin-top: 30px;">
-            <div style="margin-bottom: 15px;">
-                <label for="itemName" style="display: block; margin-bottom: 5px; font-weight: bold;">Item Name:</label>
+        <form id="itemForm" class="mt-8">
+            <div class="mb-4">
+                <label for="itemName" class="block mb-1 font-bold text-gray-700">Item Name:</label>
                 <input type="text" id="itemName" required
-                       style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+                       class="w-full p-2 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label for="itemImage" style="display: block; margin-bottom: 5px; font-weight: bold;">Item Image (PNG/JPG):</label>
+            <div class="mb-4">
+                <label for="itemImage" class="block mb-1 font-bold text-gray-700">Item Image (PNG/JPG):</label>
                 <input type="file" id="itemImage" accept="image/png, image/jpeg, image/jpg"
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
             </div>
 
-            <h2 style="color: #555; border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">Upload Receipt Documents</h2>
+            <h2 class="text-xl text-gray-700 border-t border-gray-200 pt-5 mt-8 font-semibold">Upload Receipt Documents</h2>
 
-            <div style="margin-bottom: 15px;">
-                <label for="dnPdf" style="display: block; margin-bottom: 5px; font-weight: bold;">Delivery Note (PDF):</label>
+            <div class="mb-4">
+                <label for="dnPdf" class="block mb-1 font-bold text-gray-700">Delivery Note (PDF):</label>
                 <input type="file" id="dnPdf" accept="application/pdf"
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label for="invoicePdf" style="display: block; margin-bottom: 5px; font-weight: bold;">Invoice (PDF):</label>
+            <div class="mb-6">
+                <label for="invoicePdf" class="block mb-1 font-bold text-gray-700">Invoice (PDF):</label>
                 <input type="file" id="invoicePdf" accept="application/pdf"
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"><br>
+                       class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
             </div>
 
-            <button type="submit"
-                    style="width: 100%; padding: 12px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: background-color 0.3s ease;">
+            <button type="submit" id="submitButton"
+                    class="w-full py-3 px-5 bg-blue-600 text-white font-bold rounded-md text-lg cursor-pointer transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Add Item & Upload Documents
             </button>
         </form>
 
-        <p id="message" style="margin-top: 20px; text-align: center; color: #007bff; font-weight: bold;"></p>
+        <p id="message" class="mt-5 text-center text-blue-600 font-bold"></p>
 
-        <div style="margin-top: 20px; text-align: center;">
-            <img id="uploadedImagePreview" src="" alt="Image Preview" style="max-width: 200px; height: auto; margin-top: 10px; border: 1px solid #eee; display: none;">
-            <p><a id="uploadedPdfLink" href="#" target="_blank" style="display: none; color: #007bff; text-decoration: none; font-weight: bold; margin-top: 10px;">View Uploaded PDF</a></p>
+        <div class="mt-5 text-center">
+            <img id="uploadedImagePreview" src="" alt="Image Preview" class="max-w-xs h-auto mt-2 border border-gray-200 hidden mx-auto rounded-md shadow-sm">
+            <!-- Container for PDF links to allow multiple -->
+            <div id="pdfLinksContainer" class="mt-2"></div>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script>
+        // IMPORTANT: This is your actual Supabase Edge Function URL
+        const SUPABASE_FUNCTION_URL = 'https://vjhikffducpurixlkfjd.supabase.co/functions/v1/upload-to-drive';
+
+        // Get HTML elements
+        const itemForm = document.getElementById('itemForm');
+        const itemNameInput = document.getElementById('itemName');
+        const itemImageInput = document.getElementById('itemImage');
+        const dnPdfInput = document.getElementById('dnPdf');
+        const invoicePdfInput = document.getElementById('invoicePdf');
+        const messageElement = document.getElementById('message');
+        const submitButton = document.getElementById('submitButton');
+        const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+        const pdfLinksContainer = document.getElementById('pdfLinksContainer'); // New container for PDF links
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            messageElement.textContent = message;
+            messageElement.classList.remove('text-green-600', 'text-red-600', 'text-blue-600');
+            if (type === 'success') {
+                messageElement.classList.add('text-green-600');
+            } else if (type === 'error') {
+                messageElement.classList.add('text-red-600');
+            } else { // info
+                messageElement.classList.add('text-blue-600');
+            }
+        }
+
+        // Helper function to read a file and convert it to Base64
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]); // Get only the base64 part
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Function to upload a single file to Supabase Edge Function
+        async function uploadFileToSupabase(file, fileType) {
+            if (!file) {
+                return { success: true, message: `${fileType} skipped (no file selected).` }; // Treat as success if no file
+            }
+
+            try {
+                const fileContentBase64 = await readFileAsBase64(file);
+
+                const payload = {
+                    fileName: file.name,
+                    fileContentBase64: fileContentBase64,
+                    mimeType: file.type
+                };
+
+                console.log(`Sending ${fileType} payload:`, payload.fileName, payload.mimeType);
+
+                const response = await fetch(SUPABASE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error, could not parse response.' }));
+                    throw new Error(`Upload failed for ${fileType}: ${response.status} - ${errorData.error || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+                console.log(`${fileType} upload successful:`, result);
+                return { success: true, data: result, message: `${fileType} uploaded successfully.` };
+
+            } catch (error) {
+                console.error(`Error uploading ${fileType}:`, error);
+                return { success: false, message: `Error uploading ${fileType}: ${error.message}` };
+            }
+        }
+
+        // Handle form submission
+        itemForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            const itemName = itemNameInput.value.trim();
+            if (!itemName) {
+                showMessage("Please enter an Item Name.", 'error');
+                return;
+            }
+
+            showMessage("Processing item and documents...", 'info');
+            submitButton.disabled = true; // Disable button during processing
+
+            // Reset previews and links
+            uploadedImagePreview.style.display = 'none';
+            uploadedImagePreview.src = '';
+            pdfLinksContainer.innerHTML = ''; // Clear previous PDF links
+
+
+            let allUploadsSuccessful = true;
+            const uploadResults = [];
+
+            // Upload Item Image
+            const itemImageFile = itemImageInput.files[0];
+            const itemImageResult = await uploadFileToSupabase(itemImageFile, "Item Image");
+            uploadResults.push(itemImageResult);
+            if (!itemImageResult.success) {
+                allUploadsSuccessful = false;
+            } else if (itemImageResult.data && itemImageResult.data.webViewLink) {
+                uploadedImagePreview.src = itemImageResult.data.webViewLink;
+                uploadedImagePreview.style.display = 'block';
+            }
+
+            // Upload Delivery Note PDF
+            const dnPdfFile = dnPdfInput.files[0];
+            const dnPdfResult = await uploadFileToSupabase(dnPdfFile, "Delivery Note PDF");
+            uploadResults.push(dnPdfResult);
+            if (!dnPdfResult.success) {
+                allUploadsSuccessful = false;
+            } else if (dnPdfResult.data && dnPdfResult.data.webViewLink) {
+                const link = document.createElement('a');
+                link.href = dnPdfResult.data.webViewLink;
+                link.target = '_blank';
+                link.textContent = `View Delivery Note: ${dnPdfFile.name}`;
+                link.classList.add('block', 'text-blue-600', 'underline', 'font-bold', 'mt-2');
+                pdfLinksContainer.appendChild(link);
+            }
+
+            // Upload Invoice PDF
+            const invoicePdfFile = invoicePdfInput.files[0];
+            const invoicePdfResult = await uploadFileToSupabase(invoicePdfFile, "Invoice PDF");
+            uploadResults.push(invoicePdfResult);
+            if (!invoicePdfResult.success) {
+                allUploadsSuccessful = false;
+            } else if (invoicePdfResult.data && invoicePdfResult.data.webViewLink) {
+                const link = document.createElement('a');
+                link.href = invoicePdfResult.data.webViewLink;
+                link.target = '_blank';
+                link.textContent = `View Invoice: ${invoicePdfFile.name}`;
+                link.classList.add('block', 'text-blue-600', 'underline', 'font-bold', 'mt-2');
+                pdfLinksContainer.appendChild(link);
+            }
+
+
+            // Display overall result
+            if (allUploadsSuccessful) {
+                showMessage("All selected documents processed successfully!", 'success');
+                // You might want to clear the form here after successful upload
+                // itemForm.reset();
+            } else {
+                // Show messages for individual failures
+                const errorMessages = uploadResults.filter(r => !r.success).map(r => r.message).join('\n');
+                showMessage(`Some uploads failed:\n${errorMessages}`, 'error');
+            }
+
+            submitButton.disabled = false; // Re-enable button
+        });
+    </script>
 </body>
 </html>
