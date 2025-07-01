@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Supabase CLI (Specific Version)
         # Install a specific, newer version of Supabase CLI that supports 'pull'
-        run: npm install supabase@1.77.0 # This version should work
+        run: npm install supabase@1.77.0 # <--- THIS LINE IS CRITICAL
         working-directory: ./supabase # Install it into the 'supabase' directory
 
       - name: Initialize Supabase Project
