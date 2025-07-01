@@ -19,26 +19,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18 # Or your preferred Node.js version
-        # Corrected indentation for working-directory:
-        working-directory: ./supabase
+        # Removed working-directory from this step
+        # It's generally not needed for 'setup' actions as they configure the environment.
 
       - name: Install Supabase CLI
         run: npm install supabase@1.77.0 # Pin to a specific version for stability, or use latest
-        working-directory: ./supabase
+        working-directory: ./supabase # This is essential for npm install
 
       - name: Supabase Init
         run: ./node_modules/.bin/supabase init
-        working-directory: ./supabase
+        working-directory: ./supabase # This is essential for supabase init
 
       - name: Supabase Link Project
         run: ./node_modules/.bin/supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }} # Required for linking
-        working-directory: ./supabase
+        working-directory: ./supabase # This is essential for supabase link
 
       - name: Correct functions_path in config.toml
         run: yq -i '.functions.functions_path = "functions"' config.toml
-        working-directory: ./supabase
+        working-directory: ./supabase # This is essential for yq to find the config.toml
 
       - name: Deploy Supabase Function 'upload-to-drive'
         run: ./node_modules/.bin/supabase functions deploy upload-to-drive --no-verify-jwt
@@ -46,4 +46,4 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }} # Required for deploying functions
-        working-directory: ./supabase
+        working-directory: ./supabase # This is essential for supabase functions deploy
