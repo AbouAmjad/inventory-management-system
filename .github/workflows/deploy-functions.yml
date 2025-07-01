@@ -21,26 +21,36 @@ jobs:
           node-version: 18 # Or your preferred Node.js version
 
       - name: Install Supabase CLI
-        run: npm install supabase@1.77.0 # Pin to a specific version for stability, or use latest
+        # IMPORTANT: Remove '-g' flag as global installation is not supported.
+        # Install locally into node_modules
+        run: npm install supabase@latest # Or pin to a specific version like 1.77.0 for stability
         working-directory: ./supabase
 
       - name: Supabase Init
+        # Using ./node_modules/.bin/supabase to call the locally installed CLI
         run: ./node_modules/.bin/supabase init
         working-directory: ./supabase
 
       - name: Supabase Link Project
+        # Using ./node_modules/.bin/supabase to call the locally installed CLI
         run: ./node_modules/.bin/supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }} # Required for linking
         working-directory: ./supabase
 
       - name: Correct functions_path in config.toml
-        # Using sed to directly replace the functions_path value in config.toml.
-        # This bypasses yq's limitations with TOML output for complex structures.
+        # Keep this as "functions" if your structure is supabase/functions/
+        # If your structure is supabase/supabase/functions/, change to "supabase/functions"
         run: sed -i 's|^functions_path = ".*"|functions_path = "functions"|g' config.toml
         working-directory: ./supabase
 
+      # Optional: Add this step temporarily to verify config.toml content after sed
+      # - name: Verify config.toml content
+      #   run: cat config.toml
+      #   working-directory: ./supabase
+
       - name: Deploy Supabase Function 'upload-to-drive'
+        # Using ./node_modules/.bin/supabase to call the locally installed CLI
         run: ./node_modules/.bin/supabase functions deploy upload-to-drive --no-verify-jwt
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
