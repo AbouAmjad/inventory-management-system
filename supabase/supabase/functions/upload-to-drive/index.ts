@@ -1,83 +1,88 @@
 // supabase/functions/upload-to-drive/index.ts
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts"; // Keep this for the HTTP server
-import { create as createJwt, decode as decodeJwt } from "https://deno.land/x/djwt@v2.8/mod.ts"; // NEW: For JWT creation
-import { Jose, Payload } from "https://deno.land/x/djwt@v2.8/mod.ts"; // NEW: For JWT types
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { create as createJwt, decode as decodeJwt } from "https://deno.land/x/djwt@v2.8/mod.ts";
+import { Jose, Payload } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
-
-// Retrieve environment variables
 const GOOGLE_SERVICE_ACCOUNT_KEY_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
 const GOOGLE_DRIVE_FOLDER_ID = Deno.env.get("GOOGLE_DRIVE_FOLDER_ID");
 
-// Ensure environment variables are set
+// Ensure environment variables are set (these checks should now pass if secrets are in Supabase)
 if (!GOOGLE_SERVICE_ACCOUNT_KEY_JSON) {
-    console.error("Missing GOOGLE_SERVICE_ACCOUNT_KEY environment variable.");
+    console.error("Missing GOOGLE_SERVICE_ACCOUNT_KEY environment variable. THIS SHOULD NOT HAPPEN NOW.");
     Deno.exit(1);
 }
 if (!GOOGLE_DRIVE_FOLDER_ID) {
-    console.error("Missing GOOGLE_DRIVE_FOLDER_ID environment variable.");
+    console.error("Missing GOOGLE_DRIVE_FOLDER_ID environment variable. THIS SHOULD NOT HAPPEN NOW.");
     Deno.exit(1);
 }
 
-// Parse the service account key JSON once
 let serviceAccountKey: any;
 try {
     serviceAccountKey = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY_JSON);
+    console.log("Service Account Key JSON parsed successfully."); // ADDED LOG
 } catch (e) {
     console.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY JSON:", e);
     Deno.exit(1);
 }
 
-// Helper function to get an Access Token from Google using the Service Account Key
 async function getGoogleAccessToken(): Promise<string> {
+    console.log("Attempting to get Google Access Token..."); // ADDED LOG
     const header: Jose = {
         alg: "RS256",
         typ: "JWT",
     };
 
-    const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+    const now = Math.floor(Date.now() / 1000);
     const jwtPayload: Payload = {
-        iss: serviceAccountKey.client_email, // Issuer: service account email
-        scope: "https://www.googleapis.com/auth/drive.file", // Scope: specific to Google Drive file access
-        aud: "https://oauth2.googleapis.com/token", // Audience: Google's token endpoint
-        exp: now + (60 * 60), // Expiration: 1 hour from now
-        iat: now, // Issued at: current timestamp
+        iss: serviceAccountKey.client_email,
+        scope: "https://www.googleapis.com/auth/drive.file",
+        aud: "https://oauth2.googleapis.com/token",
+        exp: now + (60 * 60),
+        iat: now,
     };
 
-    // Use the private key from your service account JSON to sign the JWT
-    // The 'ext' property means the private key is in PKCS#8 format, base64-encoded.
-    // Deno's Web Crypto API requires a specific format.
-    // We're expecting a private_key in PKCS#8 PEM format (starts with -----BEGIN PRIVATE KEY-----)
     const privateKey = serviceAccountKey.private_key;
-
     if (!privateKey) {
         throw new Error("Private key not found in GOOGLE_SERVICE_ACCOUNT_KEY.");
     }
 
-    // Import the private key for signing
-    // This part is the most sensitive and might require careful formatting of the private key
-    // The `djwt` library might handle PEM format directly, but if not, you might need to
-    // remove `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` and any newlines,
-    // then base64 decode it. For simplicity, let's assume djwt can handle PEM.
-    const cryptoKey = await crypto.subtle.importKey(
-        "jwk", // Or "pkcs8" if you convert the PEM to JWK
-        // For actual PEM string, you might need a helper function to convert PEM to JWK
-        // or a library that directly signs with PEM.
-        // For demonstration, assuming a JWK format or djwt's direct PEM handling.
-        // If your `private_key` from the JSON is a simple string starting with '-----BEGIN PRIVATE KEY-----',
-        // you might need to process it. Let's assume djwt's `create` function takes a string for 'key'.
-        privateKey, // This is the PEM string from your service account JSON
-        {
-            name: "RSASSA-PKCS1-v1_5", // Algorithm name
-            hash: "SHA-256",
-        },
-        true, // extractable
-        ["sign"] // usages
-    );
+    // IMPORTANT: This part is sensitive to the format of the private_key.
+    // If you encounter errors here, it's likely due to the PEM format.
+    // For now, let's assume djwt handles it.
+    let cryptoKey: CryptoKey;
+    try {
+        // This is a common way to import PEM private keys for RS256 in Deno/Web Crypto.
+        // It requires the PEM string to be properly formatted (newlines included).
+        const pemHeader = "-----BEGIN PRIVATE KEY-----";
+        const pemFooter = "-----END PRIVATE KEY-----";
+        const pemContents = privateKey.substring(pemHeader.length, privateKey.length - pemFooter.length).replace(/\n/g, '');
+        const binaryDer = atob(pemContents);
+        const binaryDerBytes = new Uint8Array(binaryDer.length);
+        for (let i = 0; i < binaryDer.length; i++) {
+            binaryDerBytes[i] = binaryDer.charCodeAt(i);
+        }
 
-    const jwt = await createJwt(header, jwtPayload, cryptoKey); // Create the signed JWT
+        cryptoKey = await crypto.subtle.importKey(
+            "pkcs8",
+            binaryDerBytes,
+            {
+                name: "RSASSA-PKCS1-v1_5",
+                hash: "SHA-256",
+            },
+            false, // not extractable
+            ["sign"]
+        );
+        console.log("Private key imported successfully."); // ADDED LOG
+    } catch (e) {
+        console.error("Error importing private key:", e); // ADDED LOG
+        throw new Error(`Failed to import private key: ${e.message}`);
+    }
 
-    // Exchange the JWT for an Access Token
+
+    const jwt = await createJwt(header, jwtPayload, cryptoKey);
+    console.log("JWT created."); // ADDED LOG
+
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: {
@@ -89,91 +94,47 @@ async function getGoogleAccessToken(): Promise<string> {
         }).toString(),
     });
 
+    console.log("Token response status:", tokenResponse.status); // ADDED LOG
     if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
+        console.error("Google Access Token Error Response:", errorText); // ADDED LOG
         throw new Error(`Failed to get Google Access Token: ${errorText}`);
     }
 
     const tokenData = await tokenResponse.json();
     if (!tokenData.access_token) {
+        console.error("Access token not found in Google response data:", tokenData); // ADDED LOG
         throw new Error("Access token not found in Google response.");
     }
-
+    console.log("Google Access Token obtained successfully."); // ADDED LOG
     return tokenData.access_token;
 }
 
-// Main Supabase Edge Function handler
 serve(async (req) => {
+    console.log("Function invoked. Parsing request body..."); // ADDED LOG
     try {
         if (req.method !== 'POST') {
+            console.log("Method not POST. Returning 405."); // ADDED LOG
             return new Response("Method Not Allowed", { status: 405 });
         }
 
-        // IMPORTANT: How you get the file content and name from the request
-        // depends on how your client sends the data.
-        // Common ways:
-        // 1. Multipart/form-data (for actual file uploads from a browser/form)
-        // 2. Raw binary in body with Content-Type header (e.g., from another service)
-        // 3. JSON body with base64 encoded file content (less efficient, but simpler for some cases)
-
-        // For this example, let's assume the request body is JSON with
-        // 'fileName' and 'fileContentBase64' (base64 encoded string of the file)
         const requestBody = await req.json();
+        console.log("Request body parsed successfully."); // ADDED LOG
+
         const fileName = requestBody.fileName;
         const fileContentBase64 = requestBody.fileContentBase64;
-        const mimeType = requestBody.mimeType || "application/octet-stream"; // Default mime type if not provided
+        const mimeType = requestBody.mimeType || "application/octet-stream";
 
         if (!fileName || !fileContentBase64) {
+            console.log("Missing fileName or fileContentBase64."); // ADDED LOG
             return new Response(
                 JSON.stringify({ error: "Missing 'fileName' or 'fileContentBase64' in request body." }),
                 { headers: { "Content-Type": "application/json" }, status: 400 }
             );
         }
 
-        // Get the Google Access Token
         const accessToken = await getGoogleAccessToken();
-
-        // --- Step 1: Create File Metadata ---
-        // This is typically the first step for resumable uploads, but can be combined
-        // with the content for multipart. For simplicity, let's use a "multipart"
-        // approach conceptually, where metadata and content are sent together.
-        // However, the actual fetch for multipart is complex due to 'boundary'.
-
-        // Let's simplify and assume the client sends the file data directly in the body
-        // and we're treating it as a simple upload where Google guesses the type or
-        // you manually set the Content-Type header to the actual file type.
-        // For a true multipart upload, you'd need a FormData equivalent in Deno or build it manually.
-
-        // Simpler approach: Assume file content is raw binary (e.g., from fetch directly)
-        // and metadata is in query params or a previous step.
-        // A more robust approach for files: use Resumable Upload.
-
-        // Let's use a "simple" upload for small files, which sends the content directly.
-        // Metadata is sent as query parameters in this simple case or as part of the path.
-        // This is NOT the standard "multipart" upload often seen in browser forms.
-        // The Google Drive API documentation defines "Simple Upload" for small files.
-
-        const uploadUrl = new URL("https://www.googleapis.com/upload/drive/v3/files");
-        uploadUrl.searchParams.append("uploadType", "media"); // "media" is for simple upload of raw file data
-
-        const metadata = {
-            name: fileName,
-            parents: [GOOGLE_DRIVE_FOLDER_ID],
-            mimeType: mimeType, // Use the provided mimeType or default
-        };
-
-        // You need to send the metadata AND the file content.
-        // For 'uploadType=media', the body is *just* the file content.
-        // You'd typically set metadata first, then upload content.
-
-        // Let's adjust to the actual recommended pattern:
-        // For the `create` method with `uploadType=multipart`, you send metadata AND content
-        // in a single request, but it requires a `multipart/related` Content-Type.
-        // This means constructing a complex string with boundaries.
-
-        // A better approach for Edge Functions: Use `uploadType=resumable`
-        // 1. Initiate upload: Send metadata, get upload URL.
-        // 2. Upload content: Send file content to the upload URL.
+        console.log("Access token retrieved. Initiating upload..."); // ADDED LOG
 
         // --- Step 1: Initiate Resumable Upload ---
         const initiateUploadResponse = await fetch(
@@ -183,16 +144,21 @@ serve(async (req) => {
                 headers: {
                     "Authorization": `Bearer ${accessToken}`,
                     "Content-Type": "application/json; charset=UTF-8",
-                    "X-Upload-Content-Type": mimeType, // Inform Google about the actual content type
-                    "X-Upload-Content-Length": String(atob(fileContentBase64).length), // Inform Google about file size
+                    "X-Upload-Content-Type": mimeType,
+                    "X-Upload-Content-Length": String(atob(fileContentBase64).length),
                 },
-                body: JSON.stringify(metadata),
+                body: JSON.stringify({
+                    name: fileName,
+                    parents: [GOOGLE_DRIVE_FOLDER_ID],
+                    mimeType: mimeType,
+                }),
             }
         );
 
+        console.log("Initiate upload response status:", initiateUploadResponse.status); // ADDED LOG
         if (!initiateUploadResponse.ok) {
             const errorText = await initiateUploadResponse.text();
-            console.error("Failed to initiate Google Drive upload:", errorText);
+            console.error("Google Drive Initiate Upload Error Response:", errorText); // ADDED LOG
             return new Response(
                 JSON.stringify({ error: `Failed to initiate upload: ${errorText}` }),
                 { headers: { "Content-Type": "application/json" }, status: 500 }
@@ -201,22 +167,27 @@ serve(async (req) => {
 
         const uploadLocation = initiateUploadResponse.headers.get("Location");
         if (!uploadLocation) {
+            console.error("No upload location header received."); // ADDED LOG
             throw new Error("No upload location header received from Google Drive.");
         }
+        console.log("Upload location obtained:", uploadLocation); // ADDED LOG
 
         // --- Step 2: Upload File Content to the obtained Location ---
-        const fileContent = atob(fileContentBase64); // Decode base64 string to binary string
+        const fileContent = atob(fileContentBase64);
+        console.log(`Uploading ${fileContent.length} bytes of file content...`); // ADDED LOG
+
         const uploadFileResponse = await fetch(uploadLocation, {
-            method: "PUT", // Use PUT for uploading content in resumable session
+            method: "PUT",
             headers: {
-                "Content-Type": mimeType, // This is the content type of the file itself
+                "Content-Type": mimeType,
             },
-            body: fileContent, // Send the raw binary content
+            body: fileContent,
         });
 
+        console.log("File upload response status:", uploadFileResponse.status); // ADDED LOG
         if (!uploadFileResponse.ok) {
             const errorText = await uploadFileResponse.text();
-            console.error("Failed to upload file content to Google Drive:", errorText);
+            console.error("Google Drive File Upload Content Error Response:", errorText); // ADDED LOG
             return new Response(
                 JSON.stringify({ error: `Failed to upload file content: ${errorText}` }),
                 { headers: { "Content-Type": "application/json" }, status: 500 }
@@ -224,14 +195,14 @@ serve(async (req) => {
         }
 
         const uploadedFileInfo = await uploadFileResponse.json();
-        console.log("File uploaded successfully:", uploadedFileInfo);
+        console.log("File uploaded successfully to Google Drive:", uploadedFileInfo); // ADDED LOG
 
         return new Response(
             JSON.stringify({
                 message: "File uploaded successfully to Google Drive.",
                 fileId: uploadedFileInfo.id,
                 fileName: uploadedFileInfo.name,
-                webViewLink: uploadedFileInfo.webViewLink, // Link to view the file
+                webViewLink: uploadedFileInfo.webViewLink,
             }),
             {
                 headers: { "Content-Type": "application/json" },
@@ -240,7 +211,7 @@ serve(async (req) => {
         );
 
     } catch (error) {
-        console.error("Error in upload-to-drive function:", error.message);
+        console.error("Caught error in upload-to-drive function:", error.message); // ADDED LOG
         return new Response(
             JSON.stringify({ error: `Internal Server Error: ${error.message}` }),
             { headers: { "Content-Type": "application/json" }, status: 500 }
